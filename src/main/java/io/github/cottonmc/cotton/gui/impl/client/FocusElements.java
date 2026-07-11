@@ -1,10 +1,10 @@
 package io.github.cottonmc.cotton.gui.impl.client;
 
-import net.minecraft.client.gui.AbstractParentElement;
-import net.minecraft.client.gui.Element;
-import net.minecraft.client.gui.ScreenRect;
-import net.minecraft.client.gui.navigation.GuiNavigation;
-import net.minecraft.client.gui.navigation.GuiNavigationPath;
+import net.minecraft.client.gui.components.events.ContainerEventHandler; // AbstractParentElement -> ContainerEventHandler
+import net.minecraft.client.gui.components.events.GuiEventListener; // Element -> GuiEventListener
+import net.minecraft.client.gui.navigation.ScreenRectangle; // ScreenRect -> ScreenRectangle
+import net.minecraft.client.gui.navigation.FocusNavigationEvent; // Fixed package path
+import net.minecraft.client.gui.ComponentPath; // GuiNavigationPath -> ComponentPath
 
 import io.github.cottonmc.cotton.gui.widget.WPanel;
 import io.github.cottonmc.cotton.gui.widget.WWidget;
@@ -39,7 +39,7 @@ public final class FocusElements {
 		return focusModel.foci().map(focus -> new LeafFocusElement(widget, focus));
 	}
 
-	public sealed interface FocusElement<W extends WWidget> extends Element {
+	public sealed interface FocusElement<W extends WWidget> extends GuiEventListener { // Element -> GuiEventListener
 		W widget();
 	}
 
@@ -73,28 +73,41 @@ public final class FocusElements {
 		}
 
 		@Override
-		public ScreenRect getNavigationFocus() {
+		public ScreenRectangle getRectangle() {
 			Rect2i area = focus.area();
-			return new ScreenRect(
-					widget.getAbsoluteX() + area.x(),
-					widget.getAbsoluteY() + area.y(),
-					area.width(), area.height()
+			return new ScreenRectangle(
+				widget.getAbsoluteX() + area.x(),
+				widget.getAbsoluteY() + area.y(),
+				area.width(), area.height()
 			);
 		}
 
 		@Override
-		public @Nullable GuiNavigationPath getNavigationPath(GuiNavigation navigation) {
-			return widget.canFocus() && !isFocused() ? GuiNavigationPath.of(this) : null;
+		public @Nullable ComponentPath nextFocusPath(FocusNavigationEvent navigation) {
+			return widget.canFocus() && !isFocused() ? ComponentPath.leaf(this) : null;
 		}
 	}
 
-	private static final class PanelFocusElement extends AbstractParentElement implements FocusElement<WPanel> {
+	private static final class PanelFocusElement implements ContainerEventHandler, FocusElement<WPanel> { // AbstractParentElement -> ContainerEventHandler
 		private final List<FocusElement<?>> children = new ArrayList<>();
 		private final WPanel widget;
 		private List<WWidget> childWidgets;
+		private @Nullable GuiEventListener focused; // Internal focused element tracking
 
 		private PanelFocusElement(WPanel widget) {
 			this.widget = widget;
+		}
+
+		private boolean dragging;
+
+		@Override
+		public boolean isDragging() {
+			return dragging;
+		}
+
+		@Override
+		public void setDragging(boolean dragging) {
+			this.dragging = dragging;
 		}
 
 		private void refreshChildren() {
@@ -114,14 +127,14 @@ public final class FocusElements {
 				children.clear();
 				fromFoci(widget).forEach(children::add);
 				childWidgets.stream()
-						.flatMap(FocusElements::toElements)
-						.forEach(children::add);
+					.flatMap(FocusElements::toElements)
+					.forEach(children::add);
 				refreshFocus();
 			}
 		}
 
 		@Override
-		public List<FocusElement<?>> children() {
+		public List<? extends GuiEventListener> children() { // Returns your UI listeners
 			refreshChildren();
 			return children;
 		}
@@ -132,9 +145,14 @@ public final class FocusElements {
 		}
 
 		@Override
-		public @Nullable Element getFocused() {
+		public @Nullable GuiEventListener getFocused() {
 			refreshFocus();
-			return super.getFocused();
+			return this.focused;
+		}
+
+		@Override
+		public void setFocused(@Nullable GuiEventListener listener) {
+			this.focused = listener;
 		}
 
 		public void refreshFocus() {
@@ -151,6 +169,16 @@ public final class FocusElements {
 					foundFocus = true;
 				}
 			}
+		}
+
+		@Override
+		public void setFocused(boolean focused) {
+			// Required interface mapping method stub
+		}
+
+		@Override
+		public boolean isFocused() {
+			return children.stream().anyMatch(GuiEventListener::isFocused);
 		}
 	}
 }

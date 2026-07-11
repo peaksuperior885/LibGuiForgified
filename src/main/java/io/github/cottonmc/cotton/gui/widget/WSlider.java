@@ -1,7 +1,7 @@
 package io.github.cottonmc.cotton.gui.widget;
 
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.util.Identifier;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.resources.ResourceLocation; // Identifier -> ResourceLocation
 
 import io.github.cottonmc.cotton.gui.client.BackgroundPainter;
 import io.github.cottonmc.cotton.gui.client.ScreenDrawing;
@@ -13,14 +13,14 @@ import org.jetbrains.annotations.Nullable;
 
 /**
  * A simple slider widget that can be used to select int values.
- *
- * @see WAbstractSlider for supported listeners
  */
 public class WSlider extends WAbstractSlider {
 	public static final int TRACK_WIDTH = 6;
 	public static final int THUMB_SIZE = 8;
-	public static final Identifier LIGHT_TEXTURE = new Identifier(LibGuiCommon.MOD_ID, "textures/widget/slider_light.png");
-	public static final Identifier DARK_TEXTURE = new Identifier(LibGuiCommon.MOD_ID, "textures/widget/slider_dark.png");
+
+	// ResourceLocation.fromNamespaceAndPath instead of new ResourceLocation
+	public static final ResourceLocation LIGHT_TEXTURE = ResourceLocation.fromNamespaceAndPath(LibGuiCommon.MOD_ID, "textures/widget/slider_light.png");
+	public static final ResourceLocation DARK_TEXTURE = ResourceLocation.fromNamespaceAndPath(LibGuiCommon.MOD_ID, "textures/widget/slider_dark.png");
 
 	@OnlyIn(Dist.CLIENT)
 	@Nullable
@@ -37,34 +37,30 @@ public class WSlider extends WAbstractSlider {
 
 	@Override
 	protected boolean isMouseInsideBounds(int x, int y) {
-		// ao = axis-opposite mouse coordinate, aoCenter = center of ao's axis
 		int ao = axis == Axis.HORIZONTAL ? y : x;
 		int aoCenter = (axis == Axis.HORIZONTAL ? height : width) / 2;
 
-		// Check if cursor is inside or <=2px away from track
 		return ao >= aoCenter - TRACK_WIDTH / 2 - 2 && ao <= aoCenter + TRACK_WIDTH / 2 + 2;
 	}
 
 	@SuppressWarnings("SuspiciousNameCombination")
 	@OnlyIn(Dist.CLIENT)
 	@Override
-	public void paint(DrawContext context, int x, int y, int mouseX, int mouseY) {
+	public void paint(GuiGraphics context, int x, int y, int mouseX, int mouseY) {
 		if (backgroundPainter != null) {
 			backgroundPainter.paintBackground(context, x, y, this);
 		} else {
 			float px = 1 / 32f;
-			// thumbX/Y: thumb position in widget-space
 			int thumbX, thumbY;
-			// thumbXOffset: thumb texture x offset in pixels
 			int thumbXOffset;
-			Identifier texture = shouldRenderInDarkMode() ? DARK_TEXTURE : LIGHT_TEXTURE;
+			ResourceLocation texture = shouldRenderInDarkMode() ? DARK_TEXTURE : LIGHT_TEXTURE;
 
 			if (axis == Axis.VERTICAL) {
 				int trackX = x + width / 2 - TRACK_WIDTH / 2;
 				thumbX = width / 2 - THUMB_SIZE / 2;
 				thumbY = direction == Direction.UP
-						? (height - THUMB_SIZE) + 1 - (int) (coordToValueRatio * (value - min))
-						: Math.round(coordToValueRatio * (value - min));
+					? (height - THUMB_SIZE) + 1 - (int) (coordToValueRatio * (value - min))
+					: Math.round(coordToValueRatio * (value - min));
 				thumbXOffset = 0;
 
 				ScreenDrawing.texturedRect(context, trackX, y + 1, TRACK_WIDTH, 1, texture, 16*px, 0*px, 22*px, 1*px, 0xFFFFFFFF);
@@ -73,8 +69,8 @@ public class WSlider extends WAbstractSlider {
 			} else {
 				int trackY = y + height / 2 - TRACK_WIDTH / 2;
 				thumbX = direction == Direction.LEFT
-						? (width - THUMB_SIZE) - (int) (coordToValueRatio * (value - min))
-						: Math.round(coordToValueRatio * (value - min));
+					? (width - THUMB_SIZE) - (int) (coordToValueRatio * (value - min))
+					: Math.round(coordToValueRatio * (value - min));
 				thumbY = height / 2 - THUMB_SIZE / 2;
 				thumbXOffset = 8;
 
@@ -83,8 +79,6 @@ public class WSlider extends WAbstractSlider {
 				ScreenDrawing.texturedRect(context, x + width - 1, trackY, 1, TRACK_WIDTH, texture, 18*px, 3*px, 19*px, 9*px, 0xFFFFFFFF);
 			}
 
-			// thumbState values:
-			// 0: default, 1: dragging, 2: hovered
 			int thumbState = dragging ? 1 : (mouseX >= thumbX && mouseX <= thumbX + THUMB_SIZE && mouseY >= thumbY && mouseY <= thumbY + THUMB_SIZE ? 2 : 0);
 			ScreenDrawing.texturedRect(context, x + thumbX, y + thumbY, THUMB_SIZE, THUMB_SIZE, texture, thumbXOffset*px, 0*px + thumbState * 8*px, (thumbXOffset + 8)*px, 8*px + thumbState * 8*px, 0xFFFFFFFF);
 

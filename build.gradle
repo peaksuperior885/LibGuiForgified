@@ -1,201 +1,150 @@
 plugins {
-	id "dev.architectury.loom" version "1.9-SNAPSHOT"
+	id 'eclipse'
+	id 'idea'
 	id 'maven-publish'
-	id "com.hypherionmc.modutils.modpublisher" version "2.+"
+	id 'net.minecraftforge.gradle' version '[6.0.24,6.2)'
+	id 'org.parchmentmc.librarian.forgegradle' version '1.+'
+	id 'org.spongepowered.mixin' version '0.7.+'
+	id 'com.peak885.jarjar-alternative' version '1.2-BETA'
+	id 'com.gradleup.shadow' version '9.4.2'
 }
+
+group = project.maven_group
+version = "${mod_version}+${minecraft_version}"
 
 base {
-	archivesName = project.archives_base_name
-}
-
-version = "$project.mod_version+$project.upstream_version+$project.minecraft_version"
-group = project.maven_group
-
-sourceSets {
-	javadoc {
-	}
-
-	/*
-	testMod {
-		compileClasspath += main.compileClasspath
-		runtimeClasspath += main.runtimeClasspath
-	}
-	 */
-}
-
-loom {
-	forge {
-		mixinConfigs = [
-			"mixins.libgui.json"
-		]
-	}
-	/*
-	createRemapConfigurations(sourceSets.testMod)
-
-	runs {
-		testModClient {
-			client()
-			forgeTemplate "client"
-			ideConfigGenerated true
-			name = "TestModClient"
-			mods {
-				create("libgui_test") {
-					sourceSet(sourceSets.testMod)
-				}
-
-				create("libgui"){
-					sourceSet sourceSets.main
-				}
-			}
-			source sourceSets.testMod
-		}
-
-		testModServer {
-			server()
-			name = "TestModServer"
-			ideConfigGenerated true
-			mods {
-				create("libgui_test") {
-					sourceSet(sourceSets.testMod)
-				}
-
-				create("libgui"){
-					sourceSet sourceSets.main
-				}
-			}
-			source sourceSets.testMod
-		}
-	}
-	 */
-}
-
-repositories {
-	maven {
-		url "https://server.bbkr.space/artifactory/libs-release"
-		content {
-			includeGroup "io.github.cottonmc"
-		}
-	}
-	maven { url "https://jitpack.io" }
-	maven { url "https://maven.su5ed.dev/releases" }
-}
-
-dependencies {
-	minecraft "com.mojang:minecraft:${project.minecraft_version}"
-	mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
-	forge "net.minecraftforge:forge:${project.minecraft_version}-${project.forge_version}"
-
-	forgeRuntimeLibrary(implementation(include("blue.endless:jankson:1.2.3")))
-
-	include api("com.github.TexBlock:LibNinePatch:master-SNAPSHOT")
-	forgeRuntimeLibrary("com.github.TexBlock:LibNinePatch:master-SNAPSHOT")
-
-	// Test mod dependencies
-	//testModImplementation sourceSets.main.output
-}
-
-processResources {
-	inputs.property "version", project.version
-
-	filesMatching("META-INF/mods.toml") {
-		expand "version": project.version
-	}
+	archivesName = archives_base_name
 }
 
 java {
+	toolchain.languageVersion = JavaLanguageVersion.of(21)
 	withSourcesJar()
-	withJavadocJar()
-
-	toolchain.languageVersion = JavaLanguageVersion.of(17)
-
-	sourceCompatibility = JavaVersion.VERSION_17
-	targetCompatibility = JavaVersion.VERSION_17
 }
 
-tasks.withType(JavaCompile) {
-	// ensure that the encoding is set to UTF-8, no matter what the system default is
-	// this fixes some edge cases with special characters not displaying correctly
-	// see http://yodaconditions.net/blog/fix-for-java-file-encoding-problems-with-gradle.html
-	options.encoding = "UTF-8"
-	options.release = 17
-}
+minecraft {
+	mappings channel: mapping_channel, version: "${mapping_version}-${minecraft_version}"
+	copyIdeResources = true
 
-jar {
-	from "CREDITS.txt", "LICENSE"
-}
+	runs {
+		configureEach {
+			workingDirectory project.file('run')
 
-def javadocBuildJar = tasks.register('javadocBuildJar', Jar) {
-	destinationDirectory = file('build/devlibs')
-	archiveClassifier = 'javadoc-build'
-	from sourceSets.javadoc.output
-}
+			property 'forge.logging.markers', 'REGISTRIES'
+			property 'forge.logging.console.level', 'debug'
+			property 'mixin.env.remapRefMap', 'true'
 
-javadoc {
-	dependsOn javadocBuildJar
-
-	options {
-		links 'https://javadoc.io/doc/org.jetbrains/annotations/19.0.0'
-		taglets 'io.github.cottonmc.cotton.gui.jd.ExperimentalTaglet',
-			'io.github.cottonmc.cotton.gui.jd.PropertyTaglet'
-		tagletPath javadocBuildJar.get().archiveFile.get().asFile
-	}
-
-	exclude("**/impl/**")
-}
-
-publisher {
-	apiKeys.modrinth(System.getenv("MODRINTH_TOKEN"))
-	apiKeys.curseforge(System.getenv("CURSEFORGE_TOKEN"))
-
-	curseID = "$project.curseforge_id"
-	modrinthID = "$project.modrinth_id"
-	versionType = "alpha"
-	changelog = file("CHANGELOG.md").getText("UTF-8")
-	displayName = "$project.version"
-	gameVersions = ["1.20.1"]
-	loaders = loom.platform.get().id()
-	setVersion("$project.version")
-	setArtifact(remapJar)
-	addAdditionalFile(sourcesJar)
-}
-
-// configure the maven publication
-publishing {
-	publications {
-		maven(MavenPublication) {
-			from components.java
-			pom {
-				name = "LibGuiFoxified"
-				description = "Minecraft GUI Library"
-				url = "https://github.com/ThinkingStudios/LibGuiFoxified"
-				licenses {
-					license {
-						name = "MIT"
-						url = "https://github.com/ThinkingStudios/LibGuiFoxified/blob/HEAD/LICENSE"
-					}
-				}
-				developers {
-					developer {
-						name = "ThinkingStudio"
-						url = "https://github.com/ThinkingStudios"
-					}
+			mods {
+				libguifoxified {
+					source sourceSets.main
 				}
 			}
 		}
+
+		client {}
+		server { args '--nogui' }
+	}
+}
+
+repositories {
+	mavenCentral()
+
+	flatDir { dirs 'libs' }
+	maven {url "https://raw.githubusercontent.com/peaksuperior885/peaks_maven/main/files/" }
+
+	maven { url "https://jitpack.io" }
+	maven { url "https://maven.su5ed.dev/releases" }
+
+	maven {
+		url "https://server.bbkr.space/artifactory/libs-release"
+		content { includeGroup "io.github.cottonmc" }
+	}
+}
+
+mixin {
+	add sourceSets.main, "libgui.refmap.json"
+	config "mixins.libgui.json"
+}
+
+configurations {
+	bundle
+	implementation.extendsFrom bundle
+}
+
+dependencies {
+	minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
+
+	jarjar('com.peak885.janksonforgified:Jankson-Forgified:6.0.0+j1.2.3+mc1.21.1') { transitive = false }
+
+	bundle "blue.endless:jankson:1.2.3"
+	bundle "com.github.TexBlock:LibNinePatch:master-SNAPSHOT"
+
+	annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
+}
+
+tasks.shadowJar {
+	dependsOn tasks.getByName("jarjar-alternative")
+
+	archiveClassifier.set('')
+	configurations = [project.configurations.bundle]
+
+	from(tasks.getByName("jarjar-alternative").outputs.files.singleFile) {
+		into 'META-INF/jarjar'
 	}
 
-	// select the repositories you want to publish to
-	repositories {
-		maven {
-			name = "cloudsmith"
-			url = "https://maven.cloudsmith.io/thinkingstudio/libguifoxified/"
-			def releasesRepoUrl = "https://maven.cloudsmith.io/thinkingstudio/libguifoxified/"
-			def snapshotsRepoUrl = "https://maven.cloudsmith.io/thinkingstudio/libguifoxified/"
-			url = version.endsWith('SNAPSHOT') ? snapshotsRepoUrl : releasesRepoUrl
-			credentials {
-				username = 'tex-true'
-				password = System.getenv("CLOUDSMITH_MAVEN_TOKEN")
-			}
+	relocate 'blue.endless', "${maven_group}.bundle.jankson"
+	relocate 'juuxel.libninepatch', "${maven_group}.bundle.ninepatch"
+
+	dependencies {
+		exclude(dependency('org.jetbrains.kotlin:.*'))
+		exclude(dependency('org.slf4j:.*'))
+		exclude(dependency('net.sf.jopt-simple:.*'))
+		exclude(dependency('com.google.code.gson:gson:.*'))
+	}
+
+	exclude 'kotlin/**'
+	exclude 'kotlinx/**'
+	exclude 'META-INF/kotlin*'
+	exclude 'META-INF/versions/**'
+}
+
+tasks.build.dependsOn shadowJar
+
+jar {
+	duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+
+	manifest {
+		attributes(
+			'Specification-Title': 'libguifoxified',
+			'Specification-Version': '1',
+			'Implementation-Title': project.name,
+			'Implementation-Version': project.version,
+			'MixinConfigs': 'mixins.libgui.json'
+		)
+	}
+}
+
+processResources {
+	filesMatching(['META-INF/mods.toml', 'mixins.libgui.json']) {
+		expand(version: project.version, project: project)
+	}
+}
+
+tasks.withType(JavaCompile).configureEach {
+	options.encoding = 'UTF-8'
+	options.release = 21
+}
+
+tasks.withType(JavaCompile).configureEach {
+	doFirst {
+		println "Compile classpath:"
+		classpath.files.each { println "  $it" }
+	}
+}
+
+publishing {
+	publications {
+		mavenJava(MavenPublication) {
+			from components.java
 		}
 	}
 }

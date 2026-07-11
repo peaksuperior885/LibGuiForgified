@@ -1,7 +1,6 @@
 package io.github.cottonmc.cotton.gui.client;
 
-import net.minecraft.client.MinecraftClient;
-
+import net.minecraft.client.Minecraft;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import org.lwjgl.opengl.GL11;
@@ -23,12 +22,6 @@ public final class Scissors {
 
 	/**
 	 * Pushes a new scissor frame onto the stack and refreshes the scissored area.
-	 *
-	 * @param x the frame's X coordinate
-	 * @param y the frame's Y coordinate
-	 * @param width the frame's width in pixels
-	 * @param height the frame's height in pixels
-	 * @return the pushed frame
 	 */
 	public static Frame push(int x, int y, int width, int height) {
 		Frame frame = new Frame(x, y, width, height);
@@ -40,8 +33,6 @@ public final class Scissors {
 
 	/**
 	 * Pops the topmost scissor frame and refreshes the scissored area.
-	 *
-	 * @throws IllegalStateException if there are no scissor frames on the stack
 	 */
 	public static void pop() {
 		if (STACK.isEmpty()) {
@@ -53,41 +44,45 @@ public final class Scissors {
 	}
 
 	static void refreshScissors() {
-		MinecraftClient mc = MinecraftClient.getInstance();
+		Minecraft mc = Minecraft.getInstance();
 
 		if (STACK.isEmpty()) {
-			// Just use the full window framebuffer as a scissor
-			GL11.glScissor(0, 0, mc.getWindow().getFramebufferWidth(), mc.getWindow().getFramebufferHeight());
+			// No scissors left? Disable the test entirely so Minecraft renders normally
+			GL11.glDisable(GL11.GL_SCISSOR_TEST);
 			return;
 		}
 
-		int x = Integer.MIN_VALUE;
-		int y = Integer.MIN_VALUE;
-		int width = -1;
-		int height = -1;
+		// Turn the scissor test on
+		GL11.glEnable(GL11.GL_SCISSOR_TEST);
 
+		// Start with the boundary of the first frame
+		Frame first = STACK.peekFirst();
+		int x = first.x;
+		int y = first.y;
+		int maxX = x + first.width;
+		int maxY = y + first.height;
+
+		// Intersect with all other frames down the stack to find the overlap area
 		for (Frame frame : STACK) {
-			if (x < frame.x) {
-				x = frame.x;
-			}
-			if (y < frame.y) {
-				y = frame.y;
-			}
-			if (width == -1 || x + width > frame.x + frame.width) {
-				width = frame.width - (x - frame.x);
-			}
-			if (height == -1 || y + height > frame.y + frame.height) {
-				height = frame.height - (y - frame.y);
-			}
+			x = Math.max(x, frame.x);
+			y = Math.max(y, frame.y);
+			maxX = Math.min(maxX, frame.x + frame.width);
+			maxY = Math.min(maxY, frame.y + frame.height);
 		}
 
-		int windowHeight = mc.getWindow().getFramebufferHeight();
-		double scale = mc.getWindow().getScaleFactor();
+		// Prevent negative widths/heights if things don't intersect
+		int width = Math.max(0, maxX - x);
+		int height = Math.max(0, maxY - y);
+
+		int windowHeight = mc.getWindow().getHeight();
+		double scale = mc.getWindow().getGuiScale(); // getScaleFactor() -> getGuiScale()
+
+		int scaledX = (int) (x * scale);
+		int scaledY = (int) (windowHeight - (y * scale) - (height * scale));
 		int scaledWidth = (int) (width * scale);
 		int scaledHeight = (int) (height * scale);
 
-		// Expression for Y coordinate adapted from vini2003's Spinnery (code snippet released under WTFPL)
-		GL11.glScissor((int) (x * scale), (int) (windowHeight - (y * scale) - scaledHeight), scaledWidth, scaledHeight);
+		GL11.glScissor(scaledX, scaledY, scaledWidth, scaledHeight);
 	}
 
 	/**
@@ -118,18 +113,10 @@ public final class Scissors {
 			this.height = height;
 		}
 
-		/**
-		 * Pops this frame from the stack.
-		 *
-		 * @throws IllegalStateException if: <ul>
-		 *                               <li>this frame is not on the stack, or</li>
-		 *                               <li>this frame is not the topmost element on the stack</li>
-		 *                               </ul>
-		 * @see Scissors#pop()
-		 */
 		@Override
 		public void close() {
-			if (STACK.peekLast() != this) {
+			// FIXED: Use peekFirst() instead of peekLast() because ArrayDeque#push acts on the head!
+			if (STACK.peekFirst() != this) {
 				if (STACK.contains(this)) {
 					throw new IllegalStateException(this + " is not on top of the stack!");
 				} else {

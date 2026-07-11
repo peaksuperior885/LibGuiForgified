@@ -1,9 +1,9 @@
 package io.github.cottonmc.cotton.gui.impl.modmenu;
 
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.screen.ScreenTexts;
-import net.minecraft.text.Text;
+import net.minecraft.client.Minecraft; // MinecraftClient -> Minecraft
+import net.minecraft.client.gui.screens.Screen; // Package path change
+import net.minecraft.network.chat.CommonComponents; // ScreenTexts -> CommonComponents
+import net.minecraft.network.chat.Component; // Text -> Component
 
 import io.github.cottonmc.cotton.gui.client.BackgroundPainter;
 import io.github.cottonmc.cotton.gui.client.LightweightGuiDescription;
@@ -19,7 +19,8 @@ public class ConfigGui extends LightweightGuiDescription {
 		root.setInsets(Insets.ROOT_PANEL);
 		setRootPanel(root);
 
-		WToggleButton darkmodeButton = new WToggleButton(Text.translatable("option.libgui.darkmode")) {
+		// Text.translatable -> Component.translatable
+		WToggleButton darkmodeButton = new WToggleButton(Component.translatable("option.libgui.darkmode")) {
 			@Override
 			public void onToggle(boolean on) {
 				LibGuiClient.config.darkMode = on;
@@ -30,15 +31,17 @@ public class ConfigGui extends LightweightGuiDescription {
 		root.add(darkmodeButton, 0, 1, 6, 1);
 
 		root.add(new WKirbSprite(), 5, 2);
-		
-		WButton doneButton = new WButton(ScreenTexts.DONE);
-		doneButton.setOnClick(()->{
-			MinecraftClient.getInstance().setScreen(previous);
+
+		// ScreenTexts.DONE -> CommonComponents.GUI_DONE
+		WButton doneButton = new WButton(CommonComponents.GUI_DONE);
+		doneButton.setOnClick(() -> {
+			// MinecraftClient.getInstance() -> Minecraft.getInstance()
+			Minecraft.getInstance().setScreen(previous);
 		});
 		root.add(doneButton, 0, 3, 3, 1);
-		
+
 		root.setBackgroundPainter(BackgroundPainter.VANILLA);
-		
+
 		root.validate(this);
 	}
 }

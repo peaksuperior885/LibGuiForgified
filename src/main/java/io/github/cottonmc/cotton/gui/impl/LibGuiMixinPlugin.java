@@ -4,7 +4,7 @@ import com.google.common.base.Suppliers;
 import org.objectweb.asm.tree.ClassNode;
 import org.spongepowered.asm.mixin.extensibility.IMixinConfigPlugin;
 import org.spongepowered.asm.mixin.extensibility.IMixinInfo;
-import org.thinkingstudio.libgui_foxified.loader.FoxifiedLoader;
+import com.peak885.libgui_forgified.loader.FoxifiedLoader;
 
 import java.util.List;
 import java.util.Set;

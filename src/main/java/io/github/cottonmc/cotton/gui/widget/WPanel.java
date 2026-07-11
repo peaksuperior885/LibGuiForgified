@@ -1,6 +1,6 @@
 package io.github.cottonmc.cotton.gui.widget;
 
-import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.gui.GuiGraphics;
 
 import io.github.cottonmc.cotton.gui.GuiDescription;
 import io.github.cottonmc.cotton.gui.client.BackgroundPainter;
@@ -136,9 +136,12 @@ public abstract class WPanel extends WWidget {
 		}
 	}
 
+	/**
+	 * Paints this panel and its children. Uses GuiGraphics instead of DrawContext for 1.21.1.
+	 */
 	@OnlyIn(Dist.CLIENT)
 	@Override
-	public void paint(DrawContext context, int x, int y, int mouseX, int mouseY) {
+	public void paint(GuiGraphics context, int x, int y, int mouseX, int mouseY) {
 		if (backgroundPainter!=null) backgroundPainter.paintBackground(context, x, y, this);
 
 		for(WWidget child : children) {

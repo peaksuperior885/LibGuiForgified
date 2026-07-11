@@ -1,7 +1,7 @@
 package io.github.cottonmc.cotton.gui.impl.modmenu;
 
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.util.Identifier;
+import net.minecraft.client.gui.GuiGraphics; // DrawContext -> GuiGraphics
+import net.minecraft.resources.ResourceLocation; // Identifier -> ResourceLocation
 
 import io.github.cottonmc.cotton.gui.client.ScreenDrawing;
 import io.github.cottonmc.cotton.gui.impl.LibGuiCommon;
@@ -12,21 +12,22 @@ import net.minecraftforge.api.distmarker.OnlyIn;
 import java.util.ArrayList;
 
 public class WKirbSprite extends WWidget {
-	private static final Identifier KIRB = new Identifier(LibGuiCommon.MOD_ID, "textures/widget/kirb.png");
+	// Identifier -> ResourceLocation.fromNamespaceAndPath
+	private static final ResourceLocation KIRB = ResourceLocation.fromNamespaceAndPath(LibGuiCommon.MOD_ID, "textures/widget/kirb.png");
 
 	private static final float PX = 1f/416f;
 	private static final float KIRB_WIDTH = 32*PX;
 
 	private int currentFrame = 0;
 	private long currentFrameTime = 0;
-	private int[] toSleep = { 0, 0, 0, 1, 2, 1, 2, 0, 0, 0, 1, 2, 3 };
-	private int[] asleep = { 4, 4, 4, 4, 5, 6, 7, 6, 5 };
-	private int[] toAwake = { 3, 3, 8, 8, 8, 8, 8, 8, 8 };
-	private int[] awake = { 9, 9, 9, 10, 11, 12 };
+	private final int[] toSleep = { 0, 0, 0, 1, 2, 1, 2, 0, 0, 0, 1, 2, 3 };
+	private final int[] asleep = { 4, 4, 4, 4, 5, 6, 7, 6, 5 };
+	private final int[] toAwake = { 3, 3, 8, 8, 8, 8, 8, 8, 8 };
+	private final int[] awake = { 9, 9, 9, 10, 11, 12 };
 	private State state = State.ASLEEP;
-	private ArrayList<Integer> pendingFrames = new ArrayList<>();
+	private final ArrayList<Integer> pendingFrames = new ArrayList<>();
 
-	private int frameTime = 300;
+	private final int frameTime = 300;
 	private long lastFrame;
 
 	public WKirbSprite() {
@@ -54,7 +55,7 @@ public class WKirbSprite extends WWidget {
 
 	@OnlyIn(Dist.CLIENT)
 	@Override
-	public void paint(DrawContext context, int x, int y, int mouseX, int mouseY) {
+	public void paint(GuiGraphics context, int x, int y, int mouseX, int mouseY) { // DrawContext -> GuiGraphics
 		long now = System.nanoTime() / 1_000_000L;
 
 		if (pendingFrames.isEmpty()) {
@@ -93,7 +94,7 @@ public class WKirbSprite extends WWidget {
 		this.lastFrame = now;
 	}
 
-	public static enum State {
+	public enum State {
 		AWAKE,
 		FALLING_ASLEEP,
 		ASLEEP,

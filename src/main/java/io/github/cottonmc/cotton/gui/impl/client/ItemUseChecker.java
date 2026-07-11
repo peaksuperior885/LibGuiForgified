@@ -1,28 +1,23 @@
 package io.github.cottonmc.cotton.gui.impl.client;
 
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.ItemUsageContext;
-import net.minecraft.util.ActionResult;
-import net.minecraft.util.Hand;
-import net.minecraft.util.Pair;
-import net.minecraft.util.Util;
-import net.minecraft.util.crash.CrashException;
-import net.minecraft.util.crash.CrashReport;
+import net.minecraft.client.gui.screens.Screen; // Package change
+import net.minecraft.world.entity.LivingEntity; // Package change
+import net.minecraft.world.entity.player.Player; // PlayerEntity -> Player
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.context.UseOnContext; // ItemUsageContext -> UseOnContext
+import net.minecraft.world.InteractionResult; // ActionResult -> InteractionResult
+import net.minecraft.world.InteractionHand; // Hand -> InteractionHand
+import net.minecraft.Util;
+import net.minecraft.ReportedException; // CrashException -> ReportedException
+import net.minecraft.CrashReport;
+import net.minecraft.world.level.Level; // World -> Level
 
-import net.minecraft.world.World;
-
-import net.minecraftforge.fml.util.ObfuscationReflectionHelper;
 import org.jetbrains.annotations.Nullable;
 
 import java.lang.invoke.MethodType;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-import java.util.function.Function;
 import java.util.stream.Stream;
 
 /**
@@ -34,104 +29,82 @@ public final class ItemUseChecker {
 
 	// Stack walker instance used to check the caller.
 	private static final StackWalker STACK_WALKER =
-			StackWalker.getInstance(StackWalker.Option.RETAIN_CLASS_REFERENCE);
+		StackWalker.getInstance(StackWalker.Option.RETAIN_CLASS_REFERENCE);
+
+	// Simple container replacement for net.minecraft.util.Pair to clean up dependencies
+	private record MethodIdentity(String name, MethodType type) {}
+	private record CallerIdentity(Class<?> declaringClass, String methodName) {}
 
 	// List of banned item use methods.
-	private static final List<Pair<String, MethodType>> ITEM_USE_METHODS = Util.make(new ArrayList<>(), result -> {
-		Class<Hand> hand = Hand.class;
-		Class<ActionResult> actionResult = ActionResult.class;
+	private static final List<MethodIdentity> ITEM_USE_METHODS = Util.make(new ArrayList<>(), result -> {
+		Class<InteractionHand> hand = InteractionHand.class;
+		Class<InteractionResult> actionResult = InteractionResult.class;
 		Class<LivingEntity> livingEntity = LivingEntity.class;
-		Class<PlayerEntity> playerEntity = PlayerEntity.class;
+		Class<Player> player = Player.class;
 		Class<ItemStack> itemStack = ItemStack.class;
-		Class<ItemUsageContext> itemUsageContext = ItemUsageContext.class;
-		Class<World> world = World.class;
+		Class<UseOnContext> useOnContext = UseOnContext.class;
+		Class<Level> level = Level.class;
 
-		// use
-		result.add(resolveItemMethod("method_7836", actionResult, world, playerEntity, hand));
-		// useOnBlock
-		result.add(resolveItemMethod("method_7884", actionResult, itemUsageContext));
-		// useOnEntity
-		result.add(resolveItemMethod("method_7847", actionResult, itemStack, playerEntity, livingEntity, hand));
+		// use -> maps to 'use' in Mojang mappings
+		result.add(resolveItemMethod("use", actionResult, level, player, hand));
+		// useOnBlock -> maps to 'useOn' in Mojang mappings
+		result.add(resolveItemMethod("useOn", actionResult, useOnContext));
+		// useOnEntity -> maps to 'interactLivingEntity' in Mojang mappings
+		result.add(resolveItemMethod("interactLivingEntity", actionResult, itemStack, player, livingEntity, hand));
 	});
 
-	private static Pair<String, MethodType> resolveItemMethod(String name, Class<?> returnType, Class<?>... parameterTypes) {
-		// Build intermediary descriptor for resolving the method in the mappings.
-//		StringBuilder desc = new StringBuilder("(");
-//		for (String type : parameterTypes) {
-//			desc.append("Lnet/minecraft/").append(type).append(';');
-//		}
-//		desc.append(")Lnet/minecraft/").append(returnType).append(';');
-
-		// Remap the method name.
-		String deobfName = ObfuscationReflectionHelper.findMethod(Item.class, name, parameterTypes).getName();
-
-		// Remap the descriptor types.
-		Function<Class<?>, Object> getIntermediaryClass = className -> {
-			try {
-				return Class.forName(className.getName());
-			} catch (ClassNotFoundException e) {
-				throw new RuntimeException("Could not resolve class net.minecraft." + className, e);
-			}
-		};
-		Class<?>[] paramClasses = Arrays.stream(parameterTypes)
-				.map(getIntermediaryClass)
-				.toArray(Class[]::new);
-		Class<?> returnClass = getIntermediaryClass.apply(returnType).getClass();
-
-		// Check that the method actually exists.
+	private static MethodIdentity resolveItemMethod(String deobfName, Class<?> returnType, Class<?>... parameterTypes) {
+		// Directly find the runtime method name using standard reflection on the mapped class
 		try {
-			Item.class.getMethod(deobfName, paramClasses);
+			Item.class.getMethod(deobfName, parameterTypes);
 		} catch (NoSuchMethodException e) {
-			throw new RuntimeException("Could not find Item method " + deobfName, e);
+			throw new RuntimeException("Could not find standard mapped Item method: " + deobfName, e);
 		}
 
-		return new Pair<>(deobfName, MethodType.methodType(returnClass, paramClasses));
+		return new MethodIdentity(deobfName, MethodType.methodType(returnType, parameterTypes));
 	}
 
 	/**
 	 * Checks whether the specified screen is a LibGui screen opened
 	 * from an item usage method.
 	 *
-	 * @throws CrashException if opening the screen is not allowed
+	 * @throws ReportedException if opening the screen is not allowed
 	 */
 	public static void checkSetScreen(Screen screen) {
 		if (!(screen instanceof CottonScreenImpl cs) || Boolean.getBoolean(ALLOW_ITEM_USE_PROPERTY)) return;
 
 		// Check if this is called via Item.use. If so, crash the game.
+		@Nullable CallerIdentity useMethodCaller = STACK_WALKER.walk(s -> s
+				.skip(3) // checkSetScreen, setScreen injection, setScreen
+				.flatMap(frame -> {
+					if (!Item.class.isAssignableFrom(frame.getDeclaringClass())) return Stream.empty();
 
-		// The calling variant of Item.use[OnBlock|OnEntity].
-		// If null, nothing bad happened.
-		@Nullable Pair<? extends Class<?>, String> useMethodCaller = STACK_WALKER.walk(s -> s
-						.skip(3) // checkSetScreen, setScreen injection, setScreen
-						.flatMap(frame -> {
-							if (!Item.class.isAssignableFrom(frame.getDeclaringClass())) return Stream.empty();
-
-							return ITEM_USE_METHODS.stream()
-									.filter(method -> method.getLeft().equals(frame.getMethodName()) &&
-											method.getRight().equals(frame.getMethodType()))
-									.map(method -> new Pair<>(frame.getDeclaringClass(), method.getLeft()));
-						})
-						.findFirst())
-				.orElse(null);
+					return ITEM_USE_METHODS.stream()
+						.filter(method -> method.name().equals(frame.getMethodName()) &&
+							method.type().equals(frame.getMethodType()))
+						.map(method -> new CallerIdentity(frame.getDeclaringClass(), method.name()));
+				})
+				.findFirst())
+			.orElse(null);
 
 		if (useMethodCaller != null) {
 			String message = """
-						[LibGui] Screens cannot be opened in item use methods. Some alternatives include:
-							- Using a packet together with LightweightGuiDescription
-							- Using an ItemSyncedGuiDescription
-						Setting the screen in item use methods leads to threading issues and
-						other potential crashes on both the client and the server.
-						If you want to disable this check, set the system property %s to "true"."""
-					.formatted(ALLOW_ITEM_USE_PROPERTY);
+                   [LibGui] Screens cannot be opened in item use methods. Some alternatives include:
+                      - Using a packet together with LightweightGuiDescription
+                      - Using an ItemSyncedGuiDescription
+                   Setting the screen in item use methods leads to threading issues and
+                   other potential crashes on both the client and the server.
+                   If you want to disable this check, set the system property %s to "true"."""
+				.formatted(ALLOW_ITEM_USE_PROPERTY);
 			var cause = new UnsupportedOperationException(message);
 			cause.fillInStackTrace();
-			CrashReport report = CrashReport.create(cause, "Opening screen");
-			report.addElement("Screen opening details")
-					.add("Screen class", screen.getClass().getName())
-					.add("GUI description", () -> cs.getDescription().getClass().getName())
-					.add("Item class", () -> useMethodCaller.getLeft().getName())
-					.add("Involved method", useMethodCaller.getRight());
-			throw new CrashException(report);
+			CrashReport report = CrashReport.forThrowable(cause, "Opening screen");
+			report.addCategory("Screen opening details") // addElement -> addCategory
+				.setDetail("Screen class", screen.getClass().getName()) // add -> setDetail
+				.setDetail("GUI description", () -> cs.getDescription().getClass().getName())
+				.setDetail("Item class", () -> useMethodCaller.declaringClass().getName())
+				.setDetail("Involved method", useMethodCaller.methodName());
+			throw new ReportedException(report); // CrashException -> ReportedException
 		}
 	}
 }

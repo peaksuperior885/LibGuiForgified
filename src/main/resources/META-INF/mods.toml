@@ -1,31 +1,34 @@
-modLoader = "javafml"
-loaderVersion = "[47,)"
-license = "MIT"
+modLoader="javafml"
+loaderVersion="[52,)"
+license="MIT"
 
 [[mods]]
-modId = "libgui"
-version = "${version}"
-displayName = "LibGuiFoxified"
-displayURL = "https://github.com/ThinkingStudio/LibGuiFoxified"
-credits = "Falkreon, Juuz"
-authors = "TexTrue, ThinkingStudio"
-description = '''
-LibGui unofficial (Neo)Forge port.
+modId="libgui"
+version="${version}"
+displayName="LibGuiForgified"
+displayURL="https://github.com/peaksuperior885/LibGuiForgified"
+credits="Falkreon, Juuz"
+authors="TexTrue, ThinkingStudio, Peak885"
+description='''
+LibGui unofficial Forge port.
 
-Easy grid-based GUIs for (Neo)Forge
+Easy grid-based GUIs for Forge
 '''
-logoFile = "icon.png"
+logoFile="icon.png"
+
+[[mixins]]
+config = "mixins.libgui.json"
 
 [[dependencies.libgui]]
-modId = "forge"
-mandatory = true
-versionRange = "[47,)"
-ordering = "NONE"
-side = "BOTH"
+modId="forge"
+mandatory=true
+versionRange="[47,)"
+ordering="NONE"
+side="BOTH"
 
 [[dependencies.libgui]]
-modId = "minecraft"
-mandatory = true
-versionRange = "[1.20,1.20.2)"
-ordering = "NONE"
-side = "BOTH"
+modId="minecraft"
+mandatory=true
+versionRange="[1.21.1,1.22)"
+ordering="NONE"
+side="BOTH"

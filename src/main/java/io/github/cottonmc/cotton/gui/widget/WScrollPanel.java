@@ -1,7 +1,7 @@
 package io.github.cottonmc.cotton.gui.widget;
 
-import org.thinkingstudio.libgui_foxified.base.util.TriState;
-import net.minecraft.client.gui.DrawContext;
+import com.peak885.libgui_forgified.base.util.TriState;
+import net.minecraft.client.gui.GuiGraphics; // DrawContext -> GuiGraphics
 
 import io.github.cottonmc.cotton.gui.GuiDescription;
 import io.github.cottonmc.cotton.gui.widget.data.Axis;
@@ -52,10 +52,6 @@ public class WScrollPanel extends WClippedPanel {
 
 	/**
 	 * Returns whether this scroll panel has a horizontal scroll bar.
-	 *
-	 * @return true if there is a horizontal scroll bar,
-	 *         default if a scroll bar should be added if needed,
-	 *         and false otherwise
 	 */
 	public TriState isScrollingHorizontally() {
 		return scrollingHorizontally;
@@ -72,10 +68,6 @@ public class WScrollPanel extends WClippedPanel {
 
 	/**
 	 * Returns whether this scroll panel has a vertical scroll bar.
-	 *
-	 * @return true if there is a vertical scroll bar,
-	 * 	 *         default if a scroll bar should be added if needed,
-	 * 	 *         and false otherwise
 	 */
 	public TriState isScrollingVertically() {
 		return scrollingVertically;
@@ -92,7 +84,7 @@ public class WScrollPanel extends WClippedPanel {
 
 	@OnlyIn(Dist.CLIENT)
 	@Override
-	public void paint(DrawContext context, int x, int y, int mouseX, int mouseY) {
+	public void paint(GuiGraphics context, int x, int y, int mouseX, int mouseY) { // DrawContext -> GuiGraphics
 		if (verticalScrollBar.getValue() != lastVerticalScroll || horizontalScrollBar.getValue() != lastHorizontalScroll) {
 			layout();
 			lastHorizontalScroll = horizontalScrollBar.getValue();
@@ -132,14 +124,14 @@ public class WScrollPanel extends WClippedPanel {
 
 	private boolean hasHorizontalScrollbar() {
 		return (scrollingHorizontally == TriState.DEFAULT)
-				? (widget.width > this.width - SCROLL_BAR_SIZE)
-				: scrollingHorizontally.get();
+			? (widget.width > this.width - SCROLL_BAR_SIZE)
+			: scrollingHorizontally.get();
 	}
 
 	private boolean hasVerticalScrollbar() {
 		return (scrollingVertically == TriState.DEFAULT)
-				? (widget.height > this.height - SCROLL_BAR_SIZE)
-				: scrollingVertically.get();
+			? (widget.height > this.height - SCROLL_BAR_SIZE)
+			: scrollingVertically.get();
 	}
 
 	@Override
@@ -153,7 +145,6 @@ public class WScrollPanel extends WClippedPanel {
 
 	@Override
 	public void validate(GuiDescription c) {
-		//you have to validate these ones manually since they are not in children list
 		this.horizontalScrollBar.validate(c);
 		this.verticalScrollBar.validate(c);
 		super.validate(c);

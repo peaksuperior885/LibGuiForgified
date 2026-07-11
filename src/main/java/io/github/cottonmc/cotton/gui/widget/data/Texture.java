@@ -1,6 +1,6 @@
 package io.github.cottonmc.cotton.gui.widget.data;
 
-import net.minecraft.util.Identifier;
+import net.minecraft.resources.ResourceLocation;
 
 import java.util.Objects;
 
@@ -14,14 +14,14 @@ import java.util.Objects;
  * @param v2 the end V-coordinate, between 0 and 1
  * @since 3.0.0
  */
-public record Texture(Identifier image, float u1, float v1, float u2, float v2) {
+public record Texture(ResourceLocation image, float u1, float v1, float u2, float v2) {
 	/**
 	 * Constructs a new texture that uses the full image.
 	 *
 	 * @param image the image
 	 * @throws NullPointerException if the image is null
 	 */
-	public Texture(Identifier image) {
+	public Texture(ResourceLocation image) {
 		this(image, 0, 0, 1, 1);
 	}
 

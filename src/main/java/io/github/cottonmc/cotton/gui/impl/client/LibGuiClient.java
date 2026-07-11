@@ -3,10 +3,10 @@ package io.github.cottonmc.cotton.gui.impl.client;
 import blue.endless.jankson.Jankson;
 import blue.endless.jankson.JsonElement;
 import blue.endless.jankson.JsonObject;
-import org.thinkingstudio.libgui_foxified.jankson.JanksonFactory;
+import com.peak885.libgui_forgified.jankson.JanksonFactory;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.thinkingstudio.libgui_foxified.loader.FoxifiedLoader;
+import com.peak885.libgui_forgified.loader.FoxifiedLoader;
 
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -25,8 +25,6 @@ public class LibGuiClient {
 //		ClientPlayNetworking.registerGlobalReceiver(ScreenNetworkingImpl.SCREEN_MESSAGE_S2C, (client, networkHandler, buf, responseSender) -> {
 //			ScreenNetworkingImpl.handle(client, client.player, buf);
 //		});
-
-		LibGuiShaders.register();
 	}
 
 	public static LibGuiConfig loadConfig() {

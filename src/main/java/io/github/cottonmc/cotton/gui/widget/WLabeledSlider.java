@@ -1,15 +1,15 @@
 package io.github.cottonmc.cotton.gui.widget;
 
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.screen.narration.NarrationMessageBuilder;
-import net.minecraft.client.gui.screen.narration.NarrationPart;
-import net.minecraft.text.Text;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.math.RotationAxis;
+import com.mojang.blaze3d.vertex.PoseStack;
+import net.minecraft.client.gui.GuiGraphics; // DrawContext -> GuiGraphics
+import net.minecraft.client.gui.narration.NarrationElementOutput; // NarrationMessageBuilder -> NarrationElementOutput
+import net.minecraft.client.gui.narration.NarratedElementType; // NarrationPart -> NarratedElementType
+import net.minecraft.network.chat.Component; // Text -> Component
+import net.minecraft.resources.ResourceLocation; // Identifier -> ResourceLocation
+import com.mojang.math.Axis; // RotationAxis -> Axis
 
 import io.github.cottonmc.cotton.gui.client.ScreenDrawing;
 import io.github.cottonmc.cotton.gui.impl.client.NarrationMessages;
-import io.github.cottonmc.cotton.gui.widget.data.Axis;
 import io.github.cottonmc.cotton.gui.widget.data.HorizontalAlignment;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
@@ -25,59 +25,43 @@ import org.jetbrains.annotations.Nullable;
  * @see WAbstractSlider for more information about listeners
  */
 public class WLabeledSlider extends WAbstractSlider {
-	@Nullable private Text label = null;
+	@Nullable private Component label = null; // Text -> Component
 	@Nullable private LabelUpdater labelUpdater = null;
 	private HorizontalAlignment labelAlignment = HorizontalAlignment.CENTER;
 
 	/**
 	 * Constructs a horizontal slider with no default label.
-	 *
-	 * @param min the minimum value
-	 * @param max the maximum value
 	 */
 	public WLabeledSlider(int min, int max) {
-		this(min, max, Axis.HORIZONTAL);
+		this(min, max, io.github.cottonmc.cotton.gui.widget.data.Axis.HORIZONTAL);
 	}
 
 	/**
 	 * Constructs a slider with no default label.
-	 *
-	 * @param min the minimum value
-	 * @param max the maximum value
-	 * @param axis the slider axis
 	 */
-	public WLabeledSlider(int min, int max, Axis axis) {
+	public WLabeledSlider(int min, int max, io.github.cottonmc.cotton.gui.widget.data.Axis axis) {
 		super(min, max, axis);
 	}
 
 	/**
 	 * Constructs a slider.
-	 *
-	 * @param min the minimum value
-	 * @param max the maximum value
-	 * @param axis the slider axis
-	 * @param label the slider label (can be null)
 	 */
-	public WLabeledSlider(int min, int max, Axis axis, @Nullable Text label) {
+	public WLabeledSlider(int min, int max, io.github.cottonmc.cotton.gui.widget.data.Axis axis, @Nullable Component label) { // Text -> Component
 		this(min, max, axis);
 		this.label = label;
 	}
 
 	/**
 	 * Constructs a horizontal slider.
-	 *
-	 * @param min the minimum value
-	 * @param max the maximum value
-	 * @param label the slider label (can be null)
 	 */
-	public WLabeledSlider(int min, int max, @Nullable Text label) {
+	public WLabeledSlider(int min, int max, @Nullable Component label) { // Text -> Component
 		this(min, max);
 		this.label = label;
 	}
 
 	@Override
 	public void setSize(int x, int y) {
-		if (axis == Axis.HORIZONTAL) {
+		if (axis == io.github.cottonmc.cotton.gui.widget.data.Axis.HORIZONTAL) {
 			super.setSize(x, 20);
 		} else {
 			super.setSize(20, y);
@@ -86,20 +70,16 @@ public class WLabeledSlider extends WAbstractSlider {
 
 	/**
 	 * Gets the current label of this slider.
-	 *
-	 * @return the label
 	 */
 	@Nullable
-	public Text getLabel() {
+	public Component getLabel() { // Text -> Component
 		return label;
 	}
 
 	/**
 	 * Sets the label of this slider.
-	 *
-	 * @param label the new label
 	 */
-	public void setLabel(@Nullable Text label) {
+	public void setLabel(@Nullable Component label) { // Text -> Component
 		this.label = label;
 	}
 
@@ -111,39 +91,19 @@ public class WLabeledSlider extends WAbstractSlider {
 		}
 	}
 
-	/**
-	 * Gets the text alignment of this slider's label.
-	 *
-	 * @return the alignment
-	 */
 	public HorizontalAlignment getLabelAlignment() {
 		return labelAlignment;
 	}
 
-	/**
-	 * Sets the text alignment of this slider's label.
-	 *
-	 * @param labelAlignment the new alignment
-	 */
 	public void setLabelAlignment(HorizontalAlignment labelAlignment) {
 		this.labelAlignment = labelAlignment;
 	}
 
-	/**
-	 * Gets the {@link LabelUpdater} of this slider.
-	 *
-	 * @return the label updater
-	 */
 	@Nullable
 	public LabelUpdater getLabelUpdater() {
 		return labelUpdater;
 	}
 
-	/**
-	 * Sets the {@link LabelUpdater} of this slider.
-	 *
-	 * @param labelUpdater the new label updater
-	 */
 	public void setLabelUpdater(@Nullable LabelUpdater labelUpdater) {
 		this.labelUpdater = labelUpdater;
 	}
@@ -160,24 +120,23 @@ public class WLabeledSlider extends WAbstractSlider {
 
 	@OnlyIn(Dist.CLIENT)
 	@Override
-	public void paint(DrawContext context, int x, int y, int mouseX, int mouseY) {
-		int aWidth = axis == Axis.HORIZONTAL ? width : height;
-		int aHeight = axis == Axis.HORIZONTAL ? height : width;
-		int rotMouseX = axis == Axis.HORIZONTAL
-				? (direction == Direction.LEFT ? width - mouseX : mouseX)
-				: (direction == Direction.UP ? height - mouseY : mouseY);
-		int rotMouseY = axis == Axis.HORIZONTAL ? mouseY : mouseX;
+	public void paint(GuiGraphics context, int x, int y, int mouseX, int mouseY) { // DrawContext -> GuiGraphics
+		int aWidth = axis == io.github.cottonmc.cotton.gui.widget.data.Axis.HORIZONTAL ? width : height;
+		int aHeight = axis == io.github.cottonmc.cotton.gui.widget.data.Axis.HORIZONTAL ? height : width;
+		int rotMouseX = axis == io.github.cottonmc.cotton.gui.widget.data.Axis.HORIZONTAL
+			? (direction == Direction.LEFT ? width - mouseX : mouseX)
+			: (direction == Direction.UP ? height - mouseY : mouseY);
+		int rotMouseY = axis == io.github.cottonmc.cotton.gui.widget.data.Axis.HORIZONTAL ? mouseY : mouseX;
 
-		var matrices = context.getMatrices();
-		matrices.push();
+		PoseStack matrices = context.pose(); // getMatrices() -> pose()
+		matrices.pushPose(); // push() -> pushPose()
 		matrices.translate(x, y, 0);
-		if (axis == Axis.VERTICAL) {
+		if (axis == io.github.cottonmc.cotton.gui.widget.data.Axis.VERTICAL) {
 			matrices.translate(0, height, 0);
-			matrices.multiply(RotationAxis.POSITIVE_Z.rotationDegrees(270));
+			matrices.mulPose(Axis.ZP.rotationDegrees(270)); // RotationAxis.POSITIVE_Z -> Axis.ZP, multiply() -> mulPose()
 		}
 		drawButton(context, 0, 0, 0, aWidth);
 
-		// 1: regular, 2: hovered, 0: disabled/dragging
 		int thumbX = Math.round(coordToValueRatio * (value - min));
 		int thumbY = 0;
 		int thumbWidth = getThumbWidth();
@@ -194,14 +153,13 @@ public class WLabeledSlider extends WAbstractSlider {
 
 		if (label != null) {
 			int color = isMouseInsideBounds(mouseX, mouseY) ? 0xFFFFA0 : 0xE0E0E0;
-			ScreenDrawing.drawStringWithShadow(context, label.asOrderedText(), labelAlignment, 2, aHeight / 2 - 4, aWidth - 4, color);
+			ScreenDrawing.drawStringWithShadow(context, label.getVisualOrderText(), labelAlignment, 2, aHeight / 2 - 4, aWidth - 4, color); // asOrderedText -> getVisualOrderText
 		}
-		matrices.pop();
+		matrices.popPose(); // pop() -> popPose()
 	}
 
-	// state = 1: regular, 2: hovered, 0: disabled/dragging
 	@OnlyIn(Dist.CLIENT)
-	private void drawButton(DrawContext context, int x, int y, int state, int width) {
+	private void drawButton(GuiGraphics context, int x, int y, int state, int width) { // DrawContext -> GuiGraphics
 		float px = 1 / 256f;
 		float buttonLeft = 0 * px;
 		float buttonTop = (46 + (state * 20)) * px;
@@ -211,27 +169,23 @@ public class WLabeledSlider extends WAbstractSlider {
 		float buttonHeight = 20 * px;
 		float buttonEndLeft = (200 - halfWidth) * px;
 
-		Identifier texture = WButton.getTexture(this);
+		ResourceLocation texture = WButton.getTexture(this); // Identifier -> ResourceLocation
 		ScreenDrawing.texturedRect(context, x, y, halfWidth, 20, texture, buttonLeft, buttonTop, buttonLeft + buttonWidth, buttonTop + buttonHeight, 0xFFFFFFFF);
 		ScreenDrawing.texturedRect(context, x + halfWidth, y, halfWidth, 20, texture, buttonEndLeft, buttonTop, 200 * px, buttonTop + buttonHeight, 0xFFFFFFFF);
 	}
 
 	@OnlyIn(Dist.CLIENT)
 	@Override
-	public void addNarrations(NarrationMessageBuilder builder) {
+	public void updateNarration(NarrationElementOutput builder) { // addNarrations -> updateNarration, NarrationMessageBuilder -> NarrationElementOutput
 		if (getLabel() != null) {
-			builder.put(NarrationPart.TITLE, Text.translatable(NarrationMessages.LABELED_SLIDER_TITLE_KEY, getLabel(), value, min, max));
-			builder.put(NarrationPart.USAGE, NarrationMessages.SLIDER_USAGE);
+			// put -> add, NarrationPart -> NarratedElementType, Text.translatable -> Component.translatable
+			builder.add(NarratedElementType.TITLE, Component.translatable(NarrationMessages.LABELED_SLIDER_TITLE_KEY, getLabel(), value, min, max));
+			builder.add(NarratedElementType.USAGE, NarrationMessages.SLIDER_USAGE);
 		} else {
-			super.addNarrations(builder);
+			super.updateNarration(builder);
 		}
 	}
 
-	/**
-	 * A label updater updates the label of a slider based on the current value.
-	 *
-	 * <p>Useful for situations when you want to have display values on the slider.
-	 */
 	@FunctionalInterface
 	public interface LabelUpdater {
 		/**
@@ -240,6 +194,6 @@ public class WLabeledSlider extends WAbstractSlider {
 		 * @param value the slider value
 		 * @return the label
 		 */
-		Text updateLabel(int value);
+		Component updateLabel(int value); // Text -> Component
 	}
 }

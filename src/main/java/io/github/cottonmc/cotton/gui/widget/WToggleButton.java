@@ -1,13 +1,13 @@
 package io.github.cottonmc.cotton.gui.widget;
 
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.screen.narration.NarrationMessageBuilder;
-import net.minecraft.client.gui.screen.narration.NarrationPart;
-import net.minecraft.client.sound.PositionedSoundInstance;
-import net.minecraft.sound.SoundEvents;
-import net.minecraft.text.Text;
-import net.minecraft.util.Identifier;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics; // DrawContext -> GuiGraphics
+import net.minecraft.client.gui.narration.NarrationElementOutput; // NarrationMessageBuilder -> NarrationElementOutput
+import net.minecraft.client.gui.narration.NarratedElementType; // NarrationPart -> NarratedElementType
+import net.minecraft.client.resources.sounds.SimpleSoundInstance; // PositionedSoundInstance -> SimpleSoundInstance
+import net.minecraft.network.chat.Component;
+import net.minecraft.sounds.SoundEvents; // Package path fix
+import net.minecraft.resources.ResourceLocation; // Identifier -> ResourceLocation
 
 import io.github.cottonmc.cotton.gui.client.ScreenDrawing;
 import io.github.cottonmc.cotton.gui.impl.LibGuiCommon;
@@ -22,15 +22,15 @@ import java.util.function.Consumer;
 
 public class WToggleButton extends WWidget {
 	// Default on/off images
-	protected static final Texture DEFAULT_OFF_IMAGE = new Texture(new Identifier(LibGuiCommon.MOD_ID, "textures/widget/toggle_off.png"));
-	protected static final Texture DEFAULT_ON_IMAGE  = new Texture(new Identifier(LibGuiCommon.MOD_ID, "textures/widget/toggle_on.png"));
-	protected static final Texture DEFAULT_FOCUS_IMAGE = new Texture(new Identifier(LibGuiCommon.MOD_ID, "textures/widget/toggle_focus.png"));
+	protected static final Texture DEFAULT_OFF_IMAGE = new Texture(ResourceLocation.fromNamespaceAndPath(LibGuiCommon.MOD_ID, "textures/widget/toggle_off.png"));
+	protected static final Texture DEFAULT_ON_IMAGE  = new Texture(ResourceLocation.fromNamespaceAndPath(LibGuiCommon.MOD_ID, "textures/widget/toggle_on.png"));
+	protected static final Texture DEFAULT_FOCUS_IMAGE = new Texture(ResourceLocation.fromNamespaceAndPath(LibGuiCommon.MOD_ID, "textures/widget/toggle_focus.png"));
 
 	protected Texture onImage;
 	protected Texture offImage;
 	protected Texture focusImage = DEFAULT_FOCUS_IMAGE;
 
-	@Nullable protected Text label = null;
+	@Nullable protected Component label = null;
 
 	protected boolean isOn = false;
 	@Nullable protected Consumer<Boolean> onToggle = null;
@@ -50,7 +50,7 @@ public class WToggleButton extends WWidget {
 	 *
 	 * @param label the button label
 	 */
-	public WToggleButton(Text label) {
+	public WToggleButton(Component label) {
 		this(DEFAULT_ON_IMAGE, DEFAULT_OFF_IMAGE);
 		this.label = label;
 	}
@@ -61,7 +61,7 @@ public class WToggleButton extends WWidget {
 	 * @param onImage  the toggled on image
 	 * @param offImage the toggled off image
 	 */
-	public WToggleButton(Identifier onImage, Identifier offImage) {
+	public WToggleButton(ResourceLocation onImage, ResourceLocation offImage) {
 		this(new Texture(onImage), new Texture(offImage));
 	}
 
@@ -72,16 +72,12 @@ public class WToggleButton extends WWidget {
 	 * @param offImage the toggled off image
 	 * @param label    the button label
 	 */
-	public WToggleButton(Identifier onImage, Identifier offImage, Text label) {
+	public WToggleButton(ResourceLocation onImage, ResourceLocation offImage, Component label) {
 		this(new Texture(onImage), new Texture(offImage), label);
 	}
 
 	/**
 	 * Constructs a toggle button with custom images and no label.
-	 *
-	 * @param onImage  the toggled on image
-	 * @param offImage the toggled off image
-	 * @since 3.0.0
 	 */
 	public WToggleButton(Texture onImage, Texture offImage) {
 		this.onImage = onImage;
@@ -90,13 +86,8 @@ public class WToggleButton extends WWidget {
 
 	/**
 	 * Constructs a toggle button with custom images.
-	 *
-	 * @param onImage  the toggled on image
-	 * @param offImage the toggled off image
-	 * @param label    the button label
-	 * @since 3.0.0
 	 */
-	public WToggleButton(Texture onImage, Texture offImage, Text label) {
+	public WToggleButton(Texture onImage, Texture offImage, Component label) {
 		this.onImage = onImage;
 		this.offImage = offImage;
 		this.label = label;
@@ -104,17 +95,18 @@ public class WToggleButton extends WWidget {
 
 	@OnlyIn(Dist.CLIENT)
 	@Override
-	public void paint(DrawContext context, int x, int y, int mouseX, int mouseY) {
+	public void paint(GuiGraphics context, int x, int y, int mouseX, int mouseY) { // DrawContext -> GuiGraphics
 		ScreenDrawing.texturedRect(context, x, y, 18, 18, isOn ? onImage : offImage, 0xFFFFFFFF);
 		if (isFocused()) {
 			ScreenDrawing.texturedRect(context, x, y, 18, 18, focusImage, 0xFFFFFFFF);
 		}
 
-		if (label!=null) {
-			ScreenDrawing.drawString(context, label.asOrderedText(), x + 22, y+6, shouldRenderInDarkMode() ? darkmodeColor : color);
+		if (label != null) {
+			// asOrderedText() -> getVisualOrderText()
+			ScreenDrawing.drawString(context, label.getVisualOrderText(), x + 22, y + 6, shouldRenderInDarkMode() ? darkmodeColor : color);
 		}
 	}
-	
+
 	@Override
 	public boolean canResize() {
 		return true;
@@ -128,7 +120,8 @@ public class WToggleButton extends WWidget {
 	@OnlyIn(Dist.CLIENT)
 	@Override
 	public InputResult onClick(int x, int y, int button) {
-		MinecraftClient.getInstance().getSoundManager().play(PositionedSoundInstance.master(SoundEvents.UI_BUTTON_CLICK, 1.0F));
+		// PositionedSoundInstance.master -> SimpleSoundInstance.forUI
+		Minecraft.getInstance().getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1.0F));
 
 		this.isOn = !this.isOn;
 		onToggle(this.isOn);
@@ -165,11 +158,11 @@ public class WToggleButton extends WWidget {
 	}
 
 	@Nullable
-	public Text getLabel() {
+	public Component getLabel() {
 		return label;
 	}
 
-	public WToggleButton setLabel(@Nullable Text label) {
+	public WToggleButton setLabel(@Nullable Component label) {
 		this.label = label;
 		return this;
 	}
@@ -210,22 +203,22 @@ public class WToggleButton extends WWidget {
 
 	@OnlyIn(Dist.CLIENT)
 	@Override
-	public void addNarrations(NarrationMessageBuilder builder) {
-		Text onOff = isOn ? NarrationMessages.TOGGLE_BUTTON_ON : NarrationMessages.TOGGLE_BUTTON_OFF;
-		Text title;
+	public void addNarrations(NarrationElementOutput builder) { // NarrationMessageBuilder -> NarrationElementOutput
+		Component onOff = isOn ? NarrationMessages.TOGGLE_BUTTON_ON : NarrationMessages.TOGGLE_BUTTON_OFF;
+		Component title;
 
 		if (label != null) {
-			title = Text.translatable(NarrationMessages.TOGGLE_BUTTON_NAMED_KEY, label, onOff);
+			title = Component.translatable(NarrationMessages.TOGGLE_BUTTON_NAMED_KEY, label, onOff);
 		} else {
-			title = Text.translatable(NarrationMessages.TOGGLE_BUTTON_UNNAMED_KEY, onOff);
+			title = Component.translatable(NarrationMessages.TOGGLE_BUTTON_UNNAMED_KEY, onOff);
 		}
 
-		builder.put(NarrationPart.TITLE, title);
+		builder.add(NarratedElementType.TITLE, title); // put(NarrationPart) -> add(NarratedElementType)
 
 		if (isFocused()) {
-			builder.put(NarrationPart.USAGE, NarrationMessages.Vanilla.BUTTON_USAGE_FOCUSED);
+			builder.add(NarratedElementType.USAGE, NarrationMessages.Vanilla.BUTTON_USAGE_FOCUSED);
 		} else if (isHovered()) {
-			builder.put(NarrationPart.USAGE, NarrationMessages.Vanilla.BUTTON_USAGE_HOVERED);
+			builder.add(NarratedElementType.USAGE, NarrationMessages.Vanilla.BUTTON_USAGE_HOVERED);
 		}
 	}
 }

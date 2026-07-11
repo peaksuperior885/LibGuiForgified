@@ -1,15 +1,10 @@
 package io.github.cottonmc.cotton.gui.impl.client;
 
-import com.mojang.blaze3d.systems.RenderCall;
 import com.mojang.blaze3d.systems.RenderSystem;
-import net.minecraft.client.gl.ShaderProgram;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.render.BufferBuilder;
-import net.minecraft.client.render.BufferRenderer;
-import net.minecraft.client.render.Tessellator;
-import net.minecraft.client.render.VertexFormat;
-import net.minecraft.client.render.VertexFormats;
-import net.minecraft.util.Identifier;
+import net.minecraft.client.renderer.ShaderInstance; // ShaderProgram -> ShaderInstance
+import net.minecraft.client.gui.GuiGraphics; // DrawContext -> GuiGraphics
+import com.mojang.blaze3d.vertex.*;
+import net.minecraft.resources.ResourceLocation; // Identifier -> ResourceLocation
 
 import io.github.cottonmc.cotton.gui.client.ScreenDrawing;
 import juuxel.libninepatch.ContextualTextureRenderer;
@@ -19,47 +14,52 @@ import org.joml.Matrix4f;
 /**
  * An implementation of LibNinePatch's {@link ContextualTextureRenderer} for identifiers.
  */
-public enum NinePatchTextureRendererImpl implements ContextualTextureRenderer<Identifier, DrawContext> {
+public enum NinePatchTextureRendererImpl implements ContextualTextureRenderer<ResourceLocation, GuiGraphics> { // Identifier, DrawContext updated
 	INSTANCE;
 
 	@Override
-	public void draw(Identifier texture, DrawContext context, int x, int y, int width, int height, float u1, float v1, float u2, float v2) {
+	public void draw(ResourceLocation texture, GuiGraphics context, int x, int y, int width, int height, float u1, float v1, float u2, float v2) {
 		ScreenDrawing.texturedRect(context, x, y, width, height, texture, u1, v1, u2, v2, 0xFF_FFFFFF);
 	}
 
 	@Override
-	public void drawTiled(Identifier texture, DrawContext context, int x, int y, int regionWidth, int regionHeight, int tileWidth, int tileHeight, float u1, float v1, float u2, float v2) {
+	public void drawTiled(ResourceLocation texture, GuiGraphics context, int x, int y, int regionWidth, int regionHeight, int tileWidth, int tileHeight, float u1, float v1, float u2, float v2) {
 		RenderSystem.setShader(LibGuiShaders::getTiledRectangle);
 		RenderSystem.setShaderTexture(0, texture);
-		RenderSystem.setShaderColor(1, 1, 1, 1);
-		Matrix4f positionMatrix = context.getMatrices().peek().getPositionMatrix();
+		RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+
+		Matrix4f positionMatrix = context.pose().last().pose(); // getMatrices().peek().getPositionMatrix() -> pose().last().pose()
+
 		onRenderThread(() -> {
-			@Nullable ShaderProgram program = RenderSystem.getShader();
+			@Nullable ShaderInstance program = RenderSystem.getShader(); // ShaderProgram -> ShaderInstance
 			if (program != null) {
-				program.getUniformOrDefault("LibGuiRectanglePos").set((float) x, (float) y);
-				program.getUniformOrDefault("LibGuiTileDimensions").set((float) tileWidth, (float) tileHeight);
-				program.getUniformOrDefault("LibGuiTileUvs").set(u1, v1, u2, v2);
-				program.getUniformOrDefault("LibGuiPositionMatrix").set(positionMatrix);
+				// 1.21.1 safe uniform handling using safe set() overrides
+				if (program.safeGetUniform("LibGuiRectanglePos") != null) program.safeGetUniform("LibGuiRectanglePos").set((float) x, (float) y);
+				if (program.safeGetUniform("LibGuiTileDimensions") != null) program.safeGetUniform("LibGuiTileDimensions").set((float) tileWidth, (float) tileHeight);
+				if (program.safeGetUniform("LibGuiTileUvs") != null) program.safeGetUniform("LibGuiTileUvs").set(u1, v1, u2, v2);
+				if (program.safeGetUniform("LibGuiPositionMatrix") != null) program.safeGetUniform("LibGuiPositionMatrix").set(positionMatrix);
 			}
 		});
 
-		Tessellator tessellator = Tessellator.getInstance();
-		BufferBuilder buffer = tessellator.getBuffer();
+		Tesselator tessellator = Tesselator.getInstance();
+		// 1.21.1 requires using the explicit begin call on the modern Tessellator layout instance
+		BufferBuilder buffer = tessellator.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION); // DrawMode.QUADS -> Mode.QUADS, VertexFormats.POSITION -> DefaultVertexFormat.POSITION
+
 		RenderSystem.enableBlend();
-		buffer.begin(VertexFormat.DrawMode.QUADS, VertexFormats.POSITION);
-		buffer.vertex(positionMatrix, x, y, 0).next();
-		buffer.vertex(positionMatrix, x, y + regionHeight, 0).next();
-		buffer.vertex(positionMatrix, x + regionWidth, y + regionHeight, 0).next();
-		buffer.vertex(positionMatrix, x + regionWidth, y, 0).next();
-		BufferRenderer.drawWithGlobalProgram(buffer.end());
+		buffer.addVertex(positionMatrix, (float) x, (float) y, 0.0F);
+		buffer.addVertex(positionMatrix, (float) x, (float) (y + regionHeight), 0.0F);
+		buffer.addVertex(positionMatrix, (float) (x + regionWidth), (float) (y + regionHeight), 0.0F);
+		buffer.addVertex(positionMatrix, (float) (x + regionWidth), (float) y, 0.0F);
+
+		BufferUploader.drawWithShader(buffer.buildOrThrow()); // BufferRenderer.drawWithGlobalProgram -> BufferUploader.drawWithShader
 		RenderSystem.disableBlend();
 	}
 
-	private static void onRenderThread(RenderCall renderCall) {
+	private static void onRenderThread(Runnable renderCall) { // RenderCall -> Runnable
 		if (RenderSystem.isOnRenderThread()) {
-			renderCall.execute();
+			renderCall.run();
 		} else {
-			RenderSystem.recordRenderCall(renderCall);
+			RenderSystem.recordRenderCall(renderCall::run);
 		}
 	}
 }

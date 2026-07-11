@@ -1,9 +1,9 @@
 package io.github.cottonmc.cotton.gui;
 
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.inventory.Inventory;
-import net.minecraft.item.ItemStack;
-import net.minecraft.screen.slot.Slot;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.Container;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.inventory.Slot;
 
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
@@ -29,42 +29,42 @@ public class ValidatedSlot extends Slot {
 	protected final Multimap<WItemSlot, WItemSlot.ChangeListener> listeners = HashMultimap.create();
 	private boolean visible = true;
 
-	public ValidatedSlot(Inventory inventory, int index, int x, int y) {
-		super(inventory, index, x, y);
-		if (inventory==null) throw new IllegalArgumentException("Can't make an itemslot from a null inventory!");
+	public ValidatedSlot(Container container, int index, int x, int y) {
+		super(container, index, x, y);
+		if (container==null) throw new IllegalArgumentException("Can't make an itemslot from a null inventory!");
 		this.slotNumber = index;
 	}
-	
+
 	@Override
-	public boolean canInsert(ItemStack stack) {
-		return insertingAllowed && inventory.isValid(slotNumber, stack) && inputFilter.test(stack);
+	public boolean mayPlace(ItemStack stack) { // canInsert -> mayPlace
+		return insertingAllowed && container.canPlaceItem(slotNumber, stack) && inputFilter.test(stack);
 	}
-	
+
 	@Override
-	public boolean canTakeItems(PlayerEntity player) {
-		return takingAllowed && inventory.canPlayerUse(player) && outputFilter.test(getStack());
+	public boolean mayPickup(Player player) { // canTakeItems -> mayPickup
+		return takingAllowed && container.stillValid(player) && outputFilter.test(getItem());
 	}
-	
+
 	@Override
-	public ItemStack getStack() {
-		if (inventory==null) {
+	public ItemStack getItem() { // getStack -> getItem
+		if (container==null) {
 			LOGGER.warn("Prevented null-inventory from WItemSlot with slot #: {}", slotNumber);
 			return ItemStack.EMPTY;
 		}
-		
-		ItemStack result = super.getStack();
+
+		ItemStack result = super.getItem();
 		if (result==null) {
-			LOGGER.warn("Prevented null-itemstack crash from: {}", inventory.getClass().getCanonicalName());
+			LOGGER.warn("Prevented null-itemstack crash from: {}", container.getClass().getCanonicalName());
 			return ItemStack.EMPTY;
 		}
-		
+
 		return result;
 	}
 
 	@Override
-	public void markDirty() {
-		listeners.forEach((slot, listener) -> listener.onStackChanged(slot, inventory, getInventoryIndex(), getStack()));
-		super.markDirty();
+	public void setChanged() { // markDirty -> setChanged
+		listeners.forEach((slot, listener) -> listener.onStackChanged(slot, container, getInventoryIndex(), getItem()));
+		super.setChanged();
 	}
 
 	/**
@@ -196,7 +196,7 @@ public class ValidatedSlot extends Slot {
 	}
 
 	@Override
-	public boolean isEnabled() {
+	public boolean isActive() { // isEnabled -> isActive
 		return isVisible();
 	}
 

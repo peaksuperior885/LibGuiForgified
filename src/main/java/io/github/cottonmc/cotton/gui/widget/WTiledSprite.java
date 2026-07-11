@@ -1,7 +1,7 @@
 package io.github.cottonmc.cotton.gui.widget;
 
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.util.Identifier;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.resources.ResourceLocation; // Yarn Identifier -> Mojmap/Parchment ResourceLocation
 
 import io.github.cottonmc.cotton.gui.client.ScreenDrawing;
 import io.github.cottonmc.cotton.gui.widget.data.Texture;
@@ -10,119 +10,48 @@ import net.minecraftforge.api.distmarker.OnlyIn;
 
 /**
  * A sprite whose texture will be tiled.
- *
- * @since 2.0.0
  */
 public class WTiledSprite extends WSprite {
 	private int tileWidth;
 	private int tileHeight;
 
-	/**
-	 * Create a tiled sprite.
-	 * 
-	 * @param tileWidth  The width a tile
-	 * @param tileHeight The height of a tile
-	 * @param image      The image to tile
-	 */
-	public WTiledSprite(int tileWidth, int tileHeight, Identifier image) {
+	public WTiledSprite(int tileWidth, int tileHeight, ResourceLocation image) {
 		super(image);
 		this.tileWidth = tileWidth;
 		this.tileHeight = tileHeight;
 	}
 
-	/**
-	 * Create a new animated tiled sprite.
-	 *
-	 * @param tileWidth  The width a tile
-	 * @param tileHeight The height of a tile
-	 * @param frameTime  How long in milliseconds to display for. (1 tick = 50 ms)
-	 * @param frames     The locations of the frames of the animation.
-	 */
-	public WTiledSprite(int tileWidth, int tileHeight, int frameTime, Identifier... frames) {
+	public WTiledSprite(int tileWidth, int tileHeight, int frameTime, ResourceLocation... frames) {
 		super(frameTime, frames);
 		this.tileWidth = tileWidth;
 		this.tileHeight = tileHeight;
 	}
 
-	/**
-	 * Create a tiled sprite.
-	 *
-	 * @param tileWidth  The width a tile
-	 * @param tileHeight The height of a tile
-	 * @param image      The image to tile
-	 * @since 3.0.0
-	 */
 	public WTiledSprite(int tileWidth, int tileHeight, Texture image) {
 		super(image);
 		this.tileWidth = tileWidth;
 		this.tileHeight = tileHeight;
 	}
 
-	/**
-	 * Create a new animated tiled sprite.
-	 *
-	 * @param tileWidth  The width a tile
-	 * @param tileHeight The height of a tile
-	 * @param frameTime  How long in milliseconds to display for. (1 tick = 50 ms)
-	 * @param frames     The locations of the frames of the animation.
-	 * @since 3.0.0
-	 */
 	public WTiledSprite(int tileWidth, int tileHeight, int frameTime, Texture... frames) {
 		super(frameTime, frames);
 		this.tileWidth = tileWidth;
 		this.tileHeight = tileHeight;
 	}
 
-	/**
-	 * Sets the tiling size. This determines how often the texture will repeat.
-	 *
-	 * @param width  the new tiling width
-	 * @param height the new tiling height
-	 */
 	public void setTileSize(int width, int height) {
-		tileWidth = width;
-		tileHeight = height;
+		this.tileWidth = width;
+		this.tileHeight = height;
 	}
 
-	/**
-	 * Gets the tile width of this sprite.
-	 *
-	 * @return the tile width
-	 * @since 2.2.0
-	 */
-	public int getTileWidth() {
-		return tileWidth;
-	}
+	public int getTileWidth() { return tileWidth; }
+	public int getTileHeight() { return tileHeight; }
 
-	/**
-	 * Gets the tile height of this sprite.
-	 *
-	 * @return the tile height
-	 * @since 2.2.0
-	 */
-	public int getTileHeight() {
-		return tileHeight;
-	}
-
-	/**
-	 * Sets the tile width of this sprite.
-	 *
-	 * @param tileWidth the new tile width
-	 * @return this sprite
-	 * @since 2.2.0
-	 */
 	public WTiledSprite setTileWidth(int tileWidth) {
 		this.tileWidth = tileWidth;
 		return this;
 	}
 
-	/**
-	 * Sets the tile height of this sprite.
-	 *
-	 * @param tileHeight the new tile height
-	 * @return this sprite
-	 * @since 2.2.0
-	 */
 	public WTiledSprite setTileHeight(int tileHeight) {
 		this.tileHeight = tileHeight;
 		return this;
@@ -130,22 +59,26 @@ public class WTiledSprite extends WSprite {
 
 	@OnlyIn(Dist.CLIENT)
 	@Override
-	public void paintFrame(DrawContext context, int x, int y, Texture texture) {
+	public void paintFrame(GuiGraphics graphics, int x, int y, Texture texture) {
 		// Y Direction (down)
 		for (int tileYOffset = 0; tileYOffset < height; tileYOffset += tileHeight) {
 			// X Direction (right)
 			for (int tileXOffset = 0; tileXOffset < width; tileXOffset += tileWidth) {
-				// draw the texture
+
+				// Calculate how much to draw, so we don't render tiles outside the widget bounds
+				int currentWidth = Math.min(tileWidth, width - tileXOffset);
+				int currentHeight = Math.min(tileHeight, height - tileYOffset);
+
+				// Use ScreenDrawing with the GuiGraphics instance
 				ScreenDrawing.texturedRect(
-						context,
-						// at the correct position using tileXOffset and tileYOffset
-						x + tileXOffset, y + tileYOffset,
-						// but using the set tileWidth and tileHeight instead of the full height and
-						// width
-						getTileWidth(), getTileHeight(),
-						// render the current texture
-						texture,
-						tint);
+					graphics,
+					x + tileXOffset,
+					y + tileYOffset,
+					currentWidth,
+					currentHeight,
+					texture,
+					tint
+				);
 			}
 		}
 	}

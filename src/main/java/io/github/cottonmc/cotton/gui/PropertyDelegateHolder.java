@@ -1,21 +1,21 @@
 package io.github.cottonmc.cotton.gui;
 
-import net.minecraft.screen.PropertyDelegate;
+import net.minecraft.world.inventory.ContainerData; // PropertyDelegate -> ContainerData
 
 /**
  * This interface can be implemented on block entity classes
- * for providing a property delegate.
+ * for providing a container data delegate.
  *
- * @see SyncedGuiDescription#getBlockPropertyDelegate(net.minecraft.screen.ScreenHandlerContext)
+ * @see SyncedGuiDescription#getBlockPropertyDelegate(net.minecraft.world.inventory.ContainerLevelAccess)
  */
 public interface PropertyDelegateHolder {
 	/**
-	 * Gets this block entity's property delegate.
+	 * Gets this block entity's container data delegate.
 	 *
-	 * <p>On the client, the returned property delegate <b>must</b> have a working implementation of
-	 * {@link PropertyDelegate#set(int, int)}.
+	 * <p>On the client, the returned delegate <b>must</b> have a working implementation of
+	 * {@link ContainerData#set(int, int)}.
 	 *
-	 * @return the property delegate
+	 * @return the container data delegate
 	 */
-	public PropertyDelegate getPropertyDelegate();
+	ContainerData getPropertyDelegate(); // PropertyDelegate -> ContainerData
 }

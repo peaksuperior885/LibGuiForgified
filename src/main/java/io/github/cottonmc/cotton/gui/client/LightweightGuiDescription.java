@@ -1,6 +1,6 @@
 package io.github.cottonmc.cotton.gui.client;
 
-import net.minecraft.screen.PropertyDelegate;
+import net.minecraft.world.inventory.ContainerData; // PropertyDelegate -> ContainerData
 
 import io.github.cottonmc.cotton.gui.GuiDescription;
 import io.github.cottonmc.cotton.gui.ValidatedSlot;
@@ -18,7 +18,7 @@ import org.jetbrains.annotations.Nullable;
  */
 public class LightweightGuiDescription implements GuiDescription {
 	protected WPanel rootPanel = new WGridPanel().setInsets(Insets.ROOT_PANEL);
-	protected PropertyDelegate propertyDelegate;
+	protected ContainerData propertyDelegate; // PropertyDelegate -> ContainerData
 	protected WWidget focus;
 
 	protected int titleColor = WLabel.DEFAULT_TEXT_COLOR;
@@ -27,7 +27,7 @@ public class LightweightGuiDescription implements GuiDescription {
 	protected boolean titleVisible = true;
 	protected HorizontalAlignment titleAlignment = HorizontalAlignment.LEFT;
 	private Vec2i titlePos = new Vec2i(8, 6);
-	
+
 	@Override
 	public WPanel getRootPanel() {
 		return rootPanel;
@@ -72,12 +72,12 @@ public class LightweightGuiDescription implements GuiDescription {
 
 	@Override
 	@Nullable
-	public PropertyDelegate getPropertyDelegate() {
+	public ContainerData getPropertyDelegate() { // PropertyDelegate -> ContainerData
 		return propertyDelegate;
 	}
 
 	@Override
-	public GuiDescription setPropertyDelegate(PropertyDelegate delegate) {
+	public GuiDescription setPropertyDelegate(ContainerData delegate) { // PropertyDelegate -> ContainerData
 		this.propertyDelegate = delegate;
 		return this;
 	}
@@ -94,7 +94,6 @@ public class LightweightGuiDescription implements GuiDescription {
 
 	@Override
 	public void requestFocus(WWidget widget) {
-		//TODO: Are there circumstances where focus can't be stolen?
 		if (focus==widget) return; //Nothing happens if we're already focused
 		if (!widget.canFocus()) return; //This is kind of a gotcha but needs to happen
 		if (focus!=null) focus.onFocusLost();

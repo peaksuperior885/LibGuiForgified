@@ -1,9 +1,9 @@
 package io.github.cottonmc.cotton.gui.widget;
 
-import net.minecraft.client.gui.screen.narration.NarrationMessageBuilder;
-import net.minecraft.client.gui.screen.narration.NarrationPart;
-import net.minecraft.text.Text;
-import net.minecraft.util.math.MathHelper;
+import net.minecraft.client.gui.narration.NarrationElementOutput; // NarrationMessageBuilder -> NarrationElementOutput
+import net.minecraft.client.gui.narration.NarratedElementType; // NarrationPart -> NarratedElementType
+import net.minecraft.network.chat.Component; // Text -> Component
+import net.minecraft.util.Mth; // MathHelper -> Mth
 
 import io.github.cottonmc.cotton.gui.impl.client.NarrationMessages;
 import io.github.cottonmc.cotton.gui.widget.data.Axis;
@@ -17,19 +17,6 @@ import java.util.function.IntConsumer;
 
 /**
  * A base class for slider widgets that can be used to select int values.
- *
- * <p>You can set two listeners on a slider:
- * <ul>
- *     <li>
- *         A value change listener that gets all value changes.
- *     </li>
- *     <li>
- *         A dragging finished listener that gets called when the player stops dragging the slider
- *         or modifies the value with the keyboard.
- *         For example, this can be used for sending sync packets to the server
- *         when the player has selected a value.
- *     </li>
- * </ul>
  */
 public abstract class WAbstractSlider extends WWidget {
 	/**
@@ -51,17 +38,11 @@ public abstract class WAbstractSlider extends WWidget {
 
 	/**
 	 * A value:coordinate ratio. Used for converting user input into values.
-	 *
-	 * @see #coordToValueRatio
-	 * @see #updateValueCoordRatios()
 	 */
 	protected float valueToCoordRatio;
 
 	/**
 	 * A coordinate:value ratio. Used for rendering the thumb.
-	 *
-	 * @see #valueToCoordRatio
-	 * @see #updateValueCoordRatios()
 	 */
 	protected float coordToValueRatio;
 
@@ -130,7 +111,6 @@ public abstract class WAbstractSlider extends WWidget {
 	@OnlyIn(Dist.CLIENT)
 	@Override
 	public InputResult onMouseDown(int x, int y, int button) {
-		// Check if cursor is inside or <=2px away from track
 		if (isMouseInsideBounds(x, y)) {
 			requestFocus();
 			return InputResult.PROCESSED;
@@ -169,7 +149,7 @@ public abstract class WAbstractSlider extends WWidget {
 		int pos = axisPos - getThumbWidth() / 2;
 		int rawValue = min + Math.round(valueToCoordRatio * pos);
 		int previousValue = value;
-		value = MathHelper.clamp(rawValue, min, max);
+		value = Mth.clamp(rawValue, min, max); // MathHelper.clamp -> Mth.clamp
 		if (value != previousValue) onValueChanged(value);
 	}
 
@@ -189,7 +169,8 @@ public abstract class WAbstractSlider extends WWidget {
 		}
 
 		int previous = value;
-		value = MathHelper.clamp(value + (int) Math.signum(amount) * MathHelper.ceil(valueToCoordRatio * Math.abs(amount) * 2), min, max);
+		// MathHelper -> Mth
+		value = Mth.clamp(value + (int) Math.signum(amount) * Mth.ceil(valueToCoordRatio * Math.abs(amount) * 2), min, max);
 
 		if (previous != value) {
 			onValueChanged(value);
@@ -233,7 +214,7 @@ public abstract class WAbstractSlider extends WWidget {
 	 */
 	public void setValue(int value, boolean callListeners) {
 		int previous = this.value;
-		this.value = MathHelper.clamp(value, min, max);
+		this.value = Mth.clamp(value, min, max); // MathHelper -> Mth
 		if (callListeners && previous != this.value) {
 			onValueChanged(this.value);
 			if (draggingFinishedListener != null) draggingFinishedListener.accept(value);
@@ -290,9 +271,6 @@ public abstract class WAbstractSlider extends WWidget {
 
 	/**
 	 * Gets the direction of this slider.
-	 *
-	 * @return the direction
-	 * @since 2.0.0
 	 */
 	public Direction getDirection() {
 		return direction;
@@ -300,10 +278,6 @@ public abstract class WAbstractSlider extends WWidget {
 
 	/**
 	 * Sets the direction of this slider.
-	 *
-	 * @param direction the new direction
-	 * @throws IllegalArgumentException if the {@linkplain Direction#getAxis() direction axis} is not equal to {@link #axis}.
-	 * @since 2.0.0
 	 */
 	public void setDirection(Direction direction) {
 		if (direction.getAxis() != axis) {
@@ -317,7 +291,6 @@ public abstract class WAbstractSlider extends WWidget {
 		if (valueChangeListener != null) valueChangeListener.accept(value);
 	}
 
-	@OnlyIn(Dist.CLIENT)
 	@Override
 	public InputResult onKeyPressed(int ch, int key, int modifiers) {
 		boolean valueChanged = false;
@@ -347,7 +320,6 @@ public abstract class WAbstractSlider extends WWidget {
 		return InputResult.of(valueChanged);
 	}
 
-	@OnlyIn(Dist.CLIENT)
 	@Override
 	public InputResult onKeyReleased(int ch, int key, int modifiers) {
 		if (pendingDraggingFinishedFromKeyboard && (isDecreasingKey(ch, direction) || isIncreasingKey(ch, direction))) {
@@ -361,59 +333,29 @@ public abstract class WAbstractSlider extends WWidget {
 
 	/**
 	 * Tests whether the user is dragging this slider.
-	 *
-	 * @return true if this slider is being dragged, false otherwise
-	 * @since 4.0.0
 	 */
 	public boolean isDragging() {
 		return dragging;
 	}
 
-	@OnlyIn(Dist.CLIENT)
-	@Override
-	public void addNarrations(NarrationMessageBuilder builder) {
-		builder.put(NarrationPart.TITLE, Text.translatable(NarrationMessages.SLIDER_MESSAGE_KEY, value, min, max));
-		builder.put(NarrationPart.USAGE, NarrationMessages.SLIDER_USAGE);
+	public void updateNarration(NarrationElementOutput builder) { // addNarrations -> updateNarration, NarrationMessageBuilder -> NarrationElementOutput
+		// put -> add, NarrationPart -> NarratedElementType, Text.translatable -> Component.translatable
+		builder.add(NarratedElementType.TITLE, Component.translatable(NarrationMessages.SLIDER_MESSAGE_KEY, value, min, max));
+		builder.add(NarratedElementType.USAGE, NarrationMessages.SLIDER_USAGE);
 	}
 
-	/**
-	 * Tests if the key should decrease sliders with the specified direction.
-	 *
-	 * @param ch        the key code
-	 * @param direction the direction
-	 * @return true if the key should decrease sliders with the direction, false otherwise
-	 * @since 2.0.0
-	 */
 	public static boolean isDecreasingKey(int ch, Direction direction) {
 		return direction.isInverted()
-				? (ch == GLFW.GLFW_KEY_RIGHT || ch == GLFW.GLFW_KEY_UP)
-				: (ch == GLFW.GLFW_KEY_LEFT || ch == GLFW.GLFW_KEY_DOWN);
+			? (ch == GLFW.GLFW_KEY_RIGHT || ch == GLFW.GLFW_KEY_UP)
+			: (ch == GLFW.GLFW_KEY_LEFT || ch == GLFW.GLFW_KEY_DOWN);
 	}
 
-	/**
-	 * Tests if the key should increase sliders with the specified direction.
-	 *
-	 * @param ch        the key code
-	 * @param direction the direction
-	 * @return true if the key should increase sliders with the direction, false otherwise
-	 * @since 2.0.0
-	 */
 	public static boolean isIncreasingKey(int ch, Direction direction) {
 		return direction.isInverted()
-				? (ch == GLFW.GLFW_KEY_LEFT || ch == GLFW.GLFW_KEY_DOWN)
-				: (ch == GLFW.GLFW_KEY_RIGHT || ch == GLFW.GLFW_KEY_UP);
+			? (ch == GLFW.GLFW_KEY_LEFT || ch == GLFW.GLFW_KEY_DOWN)
+			: (ch == GLFW.GLFW_KEY_RIGHT || ch == GLFW.GLFW_KEY_UP);
 	}
 
-	/**
-	 * The direction enum represents all four directions a slider can face.
-	 *
-	 * <p>For example, a slider whose value grows towards the right faces right.
-	 *
-	 * <p>The default direction for vertical sliders is {@link #UP} and
-	 * the one for horizontal sliders is {@link #RIGHT}.
-	 *
-	 * @since 2.0.0
-	 */
 	public enum Direction {
 		UP(Axis.VERTICAL, false),
 		DOWN(Axis.VERTICAL, true),
@@ -428,22 +370,10 @@ public abstract class WAbstractSlider extends WWidget {
 			this.inverted = inverted;
 		}
 
-		/**
-		 * Gets the direction's axis.
-		 *
-		 * @return the axis
-		 */
 		public Axis getAxis() {
 			return axis;
 		}
 
-		/**
-		 * Returns whether this slider is inverted.
-		 *
-		 * <p>An inverted slider will have reversed keyboard control.
-		 *
-		 * @return whether this slider is inverted
-		 */
 		public boolean isInverted() {
 			return inverted;
 		}

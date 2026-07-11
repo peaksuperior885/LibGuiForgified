@@ -1,17 +1,17 @@
 package io.github.cottonmc.cotton.gui.impl;
 
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.network.PacketByteBuf;
-import net.minecraft.screen.ScreenHandler;
-import net.minecraft.util.Identifier;
+import net.minecraft.world.entity.player.Player; // PlayerEntity -> Player
+import net.minecraft.network.FriendlyByteBuf; // PacketByteBuf -> FriendlyByteBuf
+import net.minecraft.world.inventory.AbstractContainerMenu; // ScreenHandler -> AbstractContainerMenu
+import net.minecraft.resources.ResourceLocation; // Identifier -> ResourceLocation
 
 import io.github.cottonmc.cotton.gui.SyncedGuiDescription;
 import io.github.cottonmc.cotton.gui.networking.NetworkSide;
 import io.github.cottonmc.cotton.gui.networking.ScreenNetworking;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.thinkingstudio.libgui_foxified.network.LibGuiPacket;
-import org.thinkingstudio.libgui_foxified.network.PacketByteBufs;
+import com.peak885.libgui_forgified.network.LibGuiPacket;
+import com.peak885.libgui_forgified.network.PacketByteBufs; // Assuming this creates FriendlyByteBuf in your port
 
 import java.util.HashMap;
 import java.util.Map;
@@ -23,16 +23,16 @@ import java.util.function.Consumer;
 public class ScreenNetworkingImpl implements ScreenNetworking {
 	// Packet structure:
 	//   syncId: int
-	//   message: identifier
+	//   message: ResourceLocation
 	//   rest: buf
 
-	public static final Identifier SCREEN_MESSAGE_S2C = new Identifier(LibGuiCommon.MOD_ID, "screen_message_s2c");
-	public static final Identifier SCREEN_MESSAGE_C2S = new Identifier(LibGuiCommon.MOD_ID, "screen_message_c2s");
+	public static final ResourceLocation SCREEN_MESSAGE_S2C = ResourceLocation.fromNamespaceAndPath(LibGuiCommon.MOD_ID, "screen_message_s2c"); // new Identifier -> ResourceLocation.fromNamespaceAndPath
+	public static final ResourceLocation SCREEN_MESSAGE_C2S = ResourceLocation.fromNamespaceAndPath(LibGuiCommon.MOD_ID, "screen_message_c2s");
 
 	private static final Logger LOGGER = LogManager.getLogger();
 	private static final Map<SyncedGuiDescription, ScreenNetworkingImpl> instanceCache = new WeakHashMap<>();
 
-	private final Map<Identifier, MessageReceiver> messages = new HashMap<>();
+	private final Map<ResourceLocation, MessageReceiver> messages = new HashMap<>();
 	private SyncedGuiDescription description;
 	private final NetworkSide side;
 
@@ -41,7 +41,7 @@ public class ScreenNetworkingImpl implements ScreenNetworking {
 		this.side = side;
 	}
 
-	public void receive(Identifier message, MessageReceiver receiver) {
+	public void receive(ResourceLocation message, MessageReceiver receiver) {
 		Objects.requireNonNull(message, "message");
 		Objects.requireNonNull(receiver, "receiver");
 
@@ -53,16 +53,16 @@ public class ScreenNetworkingImpl implements ScreenNetworking {
 	}
 
 	@Override
-	public void send(Identifier message, Consumer<PacketByteBuf> writer) {
+	public void send(ResourceLocation message, Consumer<FriendlyByteBuf> writer) { // PacketByteBuf -> FriendlyByteBuf
 		Objects.requireNonNull(message, "message");
 		Objects.requireNonNull(writer, "writer");
 
-		PacketByteBuf buf = PacketByteBufs.create();
-		buf.writeVarInt(description.syncId);
-		buf.writeIdentifier(message);
+		FriendlyByteBuf buf = PacketByteBufs.create();
+		buf.writeVarInt(description.containerId); // syncId -> containerId
+		buf.writeResourceLocation(message); // writeIdentifier -> writeResourceLocation
 		writer.accept(buf);
 
-		LibGuiPacket packet = new LibGuiPacket(description.syncId, message, buf);
+		LibGuiPacket packet = new LibGuiPacket(description.containerId, message, buf);
 		if (side == NetworkSide.SERVER){
 			description.getPacketSender().sendToPlayer(packet);
 		} else {
@@ -70,24 +70,18 @@ public class ScreenNetworkingImpl implements ScreenNetworking {
 		}
 	}
 
-//	public static void init() {
-//		ServerPlayNetworking.registerGlobalReceiver(SCREEN_MESSAGE_C2S, (server, player, networkHandler, buf, responseSender) -> {
-//			handle(server, player, buf);
-//		});
-//	}
-
-	public static void handle(Executor executor, PlayerEntity player, PacketByteBuf buf) {
-		ScreenHandler screenHandler = player.currentScreenHandler;
+	public static void handle(Executor executor, Player player, FriendlyByteBuf buf) { // PlayerEntity -> Player, PacketByteBuf -> FriendlyByteBuf
+		AbstractContainerMenu screenHandler = player.containerMenu; // currentScreenHandler -> containerMenu
 
 		// Packet data
 		int syncId = buf.readVarInt();
-		Identifier messageId = buf.readIdentifier();
+		ResourceLocation messageId = buf.readResourceLocation(); // readIdentifier -> readResourceLocation
 
 		if (!(screenHandler instanceof SyncedGuiDescription)) {
 			LOGGER.error("Received message packet for screen handler {} which is not a SyncedGuiDescription", screenHandler);
 			return;
-		} else if (syncId != screenHandler.syncId) {
-			LOGGER.error("Received message for sync ID {}, current sync ID: {}", syncId, screenHandler.syncId);
+		} else if (syncId != screenHandler.containerId) { // syncId -> containerId
+			LOGGER.error("Received message for sync ID {}, current sync ID: {}", syncId, screenHandler.containerId);
 			return;
 		}
 
@@ -134,12 +128,12 @@ public class ScreenNetworkingImpl implements ScreenNetworking {
 		}
 
 		@Override
-		public void receive(Identifier message, MessageReceiver receiver) {
+		public void receive(ResourceLocation message, MessageReceiver receiver) {
 			// NO-OP
 		}
 
 		@Override
-		public void send(Identifier message, Consumer<PacketByteBuf> writer) {
+		public void send(ResourceLocation message, Consumer<FriendlyByteBuf> writer) {
 			// NO-OP
 		}
 	}

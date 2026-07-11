@@ -1,23 +1,23 @@
 package io.github.cottonmc.cotton.gui;
 
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.InventoryProvider;
-import net.minecraft.block.entity.BlockEntity;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.player.PlayerInventory;
-import net.minecraft.inventory.Inventory;
-import net.minecraft.inventory.SimpleInventory;
-import net.minecraft.item.ItemStack;
-import net.minecraft.screen.ArrayPropertyDelegate;
-import net.minecraft.screen.PropertyDelegate;
-import net.minecraft.screen.ScreenHandler;
-import net.minecraft.screen.ScreenHandlerContext;
-import net.minecraft.screen.ScreenHandlerType;
-import net.minecraft.screen.slot.Slot;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.world.World;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.WorldlyContainerHolder; // Replacement for InventoryProvider if applicable, using standard checks below
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.entity.player.Player; // PlayerEntity -> Player
+import net.minecraft.world.entity.player.Inventory; // PlayerInventory -> Inventory
+import net.minecraft.world.Container; // Inventory -> Container
+import net.minecraft.world.SimpleContainer; // SimpleInventory -> SimpleContainer
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.inventory.SimpleContainerData; // ArrayPropertyDelegate -> SimpleContainerData
+import net.minecraft.world.inventory.ContainerData; // PropertyDelegate -> ContainerData
+import net.minecraft.world.inventory.AbstractContainerMenu; // ScreenHandler -> AbstractContainerMenu
+import net.minecraft.world.inventory.ContainerLevelAccess; // ScreenHandlerContext -> ContainerLevelAccess
+import net.minecraft.world.inventory.MenuType; // ScreenHandlerType -> MenuType
+import net.minecraft.world.inventory.Slot;
+import net.minecraft.server.level.ServerPlayer; // ServerPlayerEntity -> ServerPlayer
+import net.minecraft.server.level.ServerLevel; // ServerWorld -> ServerLevel
+import net.minecraft.world.level.Level; // World -> Level
 
 import io.github.cottonmc.cotton.gui.client.BackgroundPainter;
 import io.github.cottonmc.cotton.gui.client.LibGui;
@@ -34,8 +34,8 @@ import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.network.PacketDistributor;
 import org.jetbrains.annotations.Nullable;
-import org.thinkingstudio.libgui_foxified.network.LibGuiPacket;
-import org.thinkingstudio.libgui_foxified.network.ModNetwork;
+import com.peak885.libgui_forgified.network.LibGuiPacket;
+import com.peak885.libgui_forgified.network.ModNetwork;
 
 import java.util.ArrayList;
 import java.util.function.Supplier;
@@ -43,13 +43,13 @@ import java.util.function.Supplier;
 /**
  * A screen handler-based GUI description for GUIs with slots.
  */
-public class SyncedGuiDescription extends ScreenHandler implements GuiDescription {
-	
-	protected Inventory blockInventory;
-	protected PlayerInventory playerInventory;
-	protected World world;
-	protected PropertyDelegate propertyDelegate;
-	
+public class SyncedGuiDescription extends AbstractContainerMenu implements GuiDescription { // ScreenHandler -> AbstractContainerMenu
+
+	protected Container blockInventory; // Inventory -> Container
+	protected Inventory playerInventory; // PlayerInventory -> Inventory
+	protected Level world; // World -> Level
+	protected ContainerData propertyDelegate; // PropertyDelegate -> ContainerData
+
 	protected WPanel rootPanel = new WGridPanel().setInsets(Insets.ROOT_PANEL);
 	protected int titleColor = WLabel.DEFAULT_TEXT_COLOR;
 	protected int darkTitleColor = WLabel.DEFAULT_DARKMODE_TEXT_COLOR;
@@ -62,46 +62,36 @@ public class SyncedGuiDescription extends ScreenHandler implements GuiDescriptio
 
 	/**
 	 * Constructs a new synced GUI description without a block inventory or a property delegate.
-	 *
-	 * @param type            the {@link ScreenHandlerType} of this GUI description
-	 * @param syncId          the current sync ID
-	 * @param playerInventory the player inventory of the player viewing this screen
 	 */
-	public SyncedGuiDescription(ScreenHandlerType<?> type, int syncId, PlayerInventory playerInventory) {
+	public SyncedGuiDescription(MenuType<?> type, int syncId, Inventory playerInventory) { // ScreenHandlerType -> MenuType
 		super(type, syncId);
 		this.blockInventory = null;
 		this.playerInventory = playerInventory;
-		this.world = playerInventory.player.getWorld();
-		this.propertyDelegate = null;//new ArrayPropertyDelegate(1);
+		this.world = playerInventory.player.level(); // player.getWorld() -> player.level()
+		this.propertyDelegate = null;
 	}
 
 	/**
 	 * Constructs a new synced GUI description.
-	 *
-	 * @param type             the {@link ScreenHandlerType} of this GUI description
-	 * @param syncId           the current sync ID
-	 * @param playerInventory  the player inventory of the player viewing this screen
-	 * @param blockInventory   the block inventory of a corresponding container block, or null if not found or applicable
-	 * @param propertyDelegate a property delegate whose properties, if any, will automatically be {@linkplain #addProperties(PropertyDelegate) added}
 	 */
-	public SyncedGuiDescription(ScreenHandlerType<?> type, int syncId, PlayerInventory playerInventory, @Nullable Inventory blockInventory, @Nullable PropertyDelegate propertyDelegate) {
+	public SyncedGuiDescription(MenuType<?> type, int syncId, Inventory playerInventory, @Nullable Container blockInventory, @Nullable ContainerData propertyDelegate) {
 		super(type, syncId);
 		this.blockInventory = blockInventory;
 		this.playerInventory = playerInventory;
-		this.world = playerInventory.player.getWorld();
+		this.world = playerInventory.player.level();
 		this.propertyDelegate = propertyDelegate;
-		if (propertyDelegate!=null && propertyDelegate.size()>0) this.addProperties(propertyDelegate);
-		if (blockInventory != null) blockInventory.onOpen(playerInventory.player);
+		if (propertyDelegate != null && propertyDelegate.getCount() > 0) this.addDataSlots(propertyDelegate); // addProperties -> addDataSlots, size() -> getCount()
+		if (blockInventory != null) blockInventory.startOpen(playerInventory.player); // onOpen -> startOpen
 	}
-	
+
 	public WPanel getRootPanel() {
 		return rootPanel;
 	}
-	
+
 	public int getTitleColor() {
-		return (world.isClient && isDarkMode().orElse(LibGui.isDarkMode())) ? darkTitleColor : titleColor;
+		return (world.isClientSide() && isDarkMode().orElse(LibGui.isDarkMode())) ? darkTitleColor : titleColor; // isClient -> isClientSide()
 	}
-	
+
 	public SyncedGuiDescription setRootPanel(WPanel panel) {
 		this.rootPanel = panel;
 		return this;
@@ -120,29 +110,29 @@ public class SyncedGuiDescription extends ScreenHandler implements GuiDescriptio
 		this.darkTitleColor = darkColor;
 		return this;
 	}
-	
+
 	@OnlyIn(Dist.CLIENT)
 	public void addPainters() {
 		if (this.rootPanel!=null && !fullscreen) {
 			this.rootPanel.setBackgroundPainter(BackgroundPainter.VANILLA);
 		}
 	}
-	
+
 	public void addSlotPeer(ValidatedSlot slot) {
 		this.addSlot(slot);
 	}
 
 	@Override
-	public ItemStack quickMove(PlayerEntity player, int index) {
+	public ItemStack quickMoveStack(Player player, int index) { // quickMove -> quickMoveStack, PlayerEntity -> Player
 		ItemStack result = ItemStack.EMPTY;
 		Slot slot = slots.get(index);
 
-		if (slot.hasStack()) {
-			ItemStack slotStack = slot.getStack();
+		if (slot.hasItem()) { // hasStack() -> hasItem()
+			ItemStack slotStack = slot.getItem(); // getStack() -> getItem()
 			result = slotStack.copy();
 
 			if (blockInventory!=null) {
-				if (slot.inventory==blockInventory) {
+				if (slot.container == blockInventory) { // inventory -> container
 					//Try to transfer the item from the block into the player's inventory
 					if (!this.insertItem(slotStack, this.playerInventory, true, player)) {
 						return ItemStack.EMPTY;
@@ -158,9 +148,9 @@ public class SyncedGuiDescription extends ScreenHandler implements GuiDescriptio
 			}
 
 			if (slotStack.isEmpty()) {
-				slot.setStack(ItemStack.EMPTY);
+				slot.setByPlayer(ItemStack.EMPTY); // setStack -> setByPlayer
 			} else {
-				slot.markDirty();
+				slot.setChanged(); // markDirty -> setChanged
 			}
 		}
 
@@ -168,51 +158,51 @@ public class SyncedGuiDescription extends ScreenHandler implements GuiDescriptio
 	}
 
 	/** WILL MODIFY toInsert! Returns true if anything was inserted. */
-	private boolean insertIntoExisting(ItemStack toInsert, Slot slot, PlayerEntity player) {
-		ItemStack curSlotStack = slot.getStack();
-		if (!curSlotStack.isEmpty() && ItemStack.canCombine(toInsert, curSlotStack) && slot.canInsert(toInsert)) {
+	private boolean insertIntoExisting(ItemStack toInsert, Slot slot, Player player) {
+		ItemStack curSlotStack = slot.getItem();
+		if (!curSlotStack.isEmpty() && ItemStack.isSameItemSameComponents(toInsert, curSlotStack) && slot.mayPlace(toInsert)) { // canCombine -> isSameItemSameComponents, canInsert -> mayPlace
 			int combinedAmount = curSlotStack.getCount() + toInsert.getCount();
-			int maxAmount = Math.min(toInsert.getMaxCount(), slot.getMaxItemCount(toInsert));
+			int maxAmount = Math.min(toInsert.getMaxStackSize(), slot.getMaxStackSize(toInsert)); // getMaxCount -> getMaxStackSize, getMaxItemCount -> getMaxStackSize
 			if (combinedAmount <= maxAmount) {
 				toInsert.setCount(0);
 				curSlotStack.setCount(combinedAmount);
-				slot.markDirty();
+				slot.setChanged();
 				return true;
 			} else if (curSlotStack.getCount() < maxAmount) {
-				toInsert.decrement(maxAmount - curSlotStack.getCount());
+				toInsert.shrink(maxAmount - curSlotStack.getCount()); // decrement -> shrink
 				curSlotStack.setCount(maxAmount);
-				slot.markDirty();
+				slot.setChanged();
 				return true;
 			}
 		}
 		return false;
 	}
-	
+
 	/** WILL MODIFY toInsert! Returns true if anything was inserted. */
 	private boolean insertIntoEmpty(ItemStack toInsert, Slot slot) {
-		ItemStack curSlotStack = slot.getStack();
-		if (curSlotStack.isEmpty() && slot.canInsert(toInsert)) {
-			if (toInsert.getCount() > slot.getMaxItemCount(toInsert)) {
-				slot.setStack(toInsert.split(slot.getMaxItemCount(toInsert)));
+		ItemStack curSlotStack = slot.getItem();
+		if (curSlotStack.isEmpty() && slot.mayPlace(toInsert)) {
+			if (toInsert.getCount() > slot.getMaxStackSize(toInsert)) {
+				slot.setByPlayer(toInsert.split(slot.getMaxStackSize(toInsert)));
 			} else {
-				slot.setStack(toInsert.split(toInsert.getCount()));
+				slot.setByPlayer(toInsert.split(toInsert.getCount()));
 			}
 
-			slot.markDirty();
+			slot.setChanged();
 			return true;
 		}
-		
+
 		return false;
 	}
-	
-	private boolean insertItem(ItemStack toInsert, Inventory inventory, boolean walkBackwards, PlayerEntity player) {
+
+	private boolean insertItem(ItemStack toInsert, Container inventory, boolean walkBackwards, Player player) {
 		//Make a unified list of slots *only from this inventory*
 		ArrayList<Slot> inventorySlots = new ArrayList<>();
 		for(Slot slot : slots) {
-			if (slot.inventory==inventory) inventorySlots.add(slot);
+			if (slot.container==inventory) inventorySlots.add(slot);
 		}
 		if (inventorySlots.isEmpty()) return false;
-		
+
 		//Try to insert it on top of existing stacks
 		boolean inserted = false;
 		if (walkBackwards) {
@@ -227,9 +217,9 @@ public class SyncedGuiDescription extends ScreenHandler implements GuiDescriptio
 				if (insertIntoExisting(toInsert, curSlot, player)) inserted = true;
 				if (toInsert.isEmpty()) break;
 			}
-			
+
 		}
-		
+
 		//If we still have any, shove them into empty slots
 		if (!toInsert.isEmpty()) {
 			if (walkBackwards) {
@@ -244,33 +234,33 @@ public class SyncedGuiDescription extends ScreenHandler implements GuiDescriptio
 					if (insertIntoEmpty(toInsert, curSlot)) inserted = true;
 					if (toInsert.isEmpty()) break;
 				}
-				
+
 			}
 		}
-		
+
 		return inserted;
 	}
-	
-	private boolean swapHotbar(ItemStack toInsert, int slotNumber, Inventory inventory, PlayerEntity player) {
+
+	private boolean swapHotbar(ItemStack toInsert, int slotNumber, Container inventory, Player player) {
 		//Feel out the slots to see what's storage versus hotbar
 		ArrayList<Slot> storageSlots = new ArrayList<>();
 		ArrayList<Slot> hotbarSlots = new ArrayList<>();
 		boolean swapToStorage = true;
 		boolean inserted = false;
-		
+
 		for(Slot slot : slots) {
-			if (slot.inventory==inventory && slot instanceof ValidatedSlot) {
+			if (slot.container==inventory && slot instanceof ValidatedSlot) {
 				int index = ((ValidatedSlot)slot).getInventoryIndex();
-				if (PlayerInventory.isValidHotbarIndex(index)) {
+				if (index >= 0 && index < 9) {
 					hotbarSlots.add(slot);
 				} else {
 					storageSlots.add(slot);
-					if (slot.id==slotNumber) swapToStorage = false;
+					if (slot.index==slotNumber) swapToStorage = false; // id -> index
 				}
 			}
 		}
 		if (storageSlots.isEmpty() || hotbarSlots.isEmpty()) return false;
-		
+
 		if (swapToStorage) {
 			//swap from hotbar to storage
 			for(int i=0; i<storageSlots.size(); i++) {
@@ -300,48 +290,38 @@ public class SyncedGuiDescription extends ScreenHandler implements GuiDescriptio
 				}
 			}
 		}
-		
+
 		return inserted;
 	}
 
 	@Nullable
 	@Override
-	public PropertyDelegate getPropertyDelegate() {
+	public ContainerData getPropertyDelegate() {
 		return propertyDelegate;
 	}
-	
+
 	@Override
-	public GuiDescription setPropertyDelegate(PropertyDelegate delegate) {
+	public GuiDescription setPropertyDelegate(ContainerData delegate) {
 		this.propertyDelegate = delegate;
 		return this;
 	}
 
 	/**
-	 * Creates a player inventory widget from this panel's {@linkplain #playerInventory player inventory}.
-	 *
-	 * @return the created inventory widget
+	 * Creates a player inventory widget from this panel's player inventory.
 	 */
 	public WPlayerInvPanel createPlayerInventoryPanel() {
 		return new WPlayerInvPanel(this.playerInventory);
 	}
 
 	/**
-	 * Creates a player inventory widget from this panel's {@linkplain #playerInventory player inventory}.
-	 *
-	 * @param hasLabel whether the "Inventory" label should be displayed
-	 * @return the created inventory widget
-	 * @since 2.0.0
+	 * Creates a player inventory widget from this panel's player inventory.
 	 */
 	public WPlayerInvPanel createPlayerInventoryPanel(boolean hasLabel) {
 		return new WPlayerInvPanel(this.playerInventory, hasLabel);
 	}
 
 	/**
-	 * Creates a player inventory widget from this panel's {@linkplain #playerInventory player inventory}.
-	 *
-	 * @param label the inventory label widget
-	 * @return the created inventory widget
-	 * @since 2.0.0
+	 * Creates a player inventory widget from this panel's player inventory.
 	 */
 	public WPlayerInvPanel createPlayerInventoryPanel(WWidget label) {
 		return new WPlayerInvPanel(this.playerInventory, label);
@@ -349,66 +329,39 @@ public class SyncedGuiDescription extends ScreenHandler implements GuiDescriptio
 
 	/**
 	 * Gets the block inventory at the context.
-	 *
-	 * <p>If no inventory is found, returns {@link EmptyInventory#INSTANCE}.
-	 *
-	 * <p>Searches for these implementations in the following order:
-	 * <ol>
-	 *     <li>Blocks implementing {@code InventoryProvider}</li>
-	 *     <li>Block entities implementing {@code InventoryProvider}</li>
-	 *     <li>Block entities implementing {@code Inventory}</li>
-	 * </ol>
-	 *
-	 * @param ctx the context
-	 * @return the found inventory
 	 */
-	public static Inventory getBlockInventory(ScreenHandlerContext ctx) {
+	public static Container getBlockInventory(ContainerLevelAccess ctx) { // ScreenHandlerContext -> ContainerLevelAccess, Inventory -> Container
 		return getBlockInventory(ctx, () -> EmptyInventory.INSTANCE);
 	}
 
 	/**
 	 * Gets the block inventory at the context.
-	 *
-	 * <p>If no inventory is found, returns a simple mutable inventory
-	 * with the specified number of slots.
-	 *
-	 * <p>Searches for these implementations in the following order:
-	 * <ol>
-	 *     <li>Blocks implementing {@code InventoryProvider}</li>
-	 *     <li>Block entities implementing {@code InventoryProvider}</li>
-	 *     <li>Block entities implementing {@code Inventory}</li>
-	 * </ol>
-	 *
-	 * @param ctx  the context
-	 * @param size the fallback inventory size
-	 * @return the found inventory
-	 * @since 2.0.0
 	 */
-	public static Inventory getBlockInventory(ScreenHandlerContext ctx, int size) {
-		return getBlockInventory(ctx, () -> new SimpleInventory(size));
+	public static Container getBlockInventory(ContainerLevelAccess ctx, int size) {
+		return getBlockInventory(ctx, () -> new SimpleContainer(size)); // SimpleInventory -> SimpleContainer
 	}
 
-	private static Inventory getBlockInventory(ScreenHandlerContext ctx, Supplier<Inventory> fallback) {
-		return ctx.get((world, pos) -> {
-			BlockState state = world.getBlockState(pos);
+	private static Container getBlockInventory(ContainerLevelAccess ctx, Supplier<Container> fallback) {
+		return ctx.evaluate((level, pos) -> { // get() -> evaluate()
+			BlockState state = level.getBlockState(pos);
 			Block b = state.getBlock();
 
-			if (b instanceof InventoryProvider) {
-				Inventory inventory = ((InventoryProvider)b).getInventory(state, world, pos);
+			if (b instanceof WorldlyContainerHolder) { // InventoryProvider -> WorldlyContainerHolder
+				Container inventory = ((WorldlyContainerHolder)b).getContainer(state, level, pos); // getInventory -> getContainer
 				if (inventory != null) {
 					return inventory;
 				}
 			}
 
-			BlockEntity be = world.getBlockEntity(pos);
+			BlockEntity be = level.getBlockEntity(pos);
 			if (be!=null) {
-				if (be instanceof InventoryProvider) {
-					Inventory inventory = ((InventoryProvider)be).getInventory(state, world, pos);
+				if (be instanceof WorldlyContainerHolder) {
+					Container inventory = ((WorldlyContainerHolder)be).getContainer(state, level, pos);
 					if (inventory != null) {
 						return inventory;
 					}
-				} else if (be instanceof Inventory) {
-					return (Inventory)be;
+				} else if (be instanceof Container) {
+					return (Container)be;
 				}
 			}
 
@@ -418,61 +371,42 @@ public class SyncedGuiDescription extends ScreenHandler implements GuiDescriptio
 
 	/**
 	 * Gets the property delegate at the context.
-	 *
-	 * <p>If no property delegate is found, returns an empty property delegate with no properties.
-	 *
-	 * <p>Searches for block entities implementing {@link PropertyDelegateHolder}.
-	 *
-	 * @param ctx the context
-	 * @return the found property delegate
 	 */
-	public static PropertyDelegate getBlockPropertyDelegate(ScreenHandlerContext ctx) {
-		return ctx.get((world, pos) -> {
-			BlockEntity be = world.getBlockEntity(pos);
+	public static ContainerData getBlockPropertyDelegate(ContainerLevelAccess ctx) {
+		return ctx.evaluate((level, pos) -> {
+			BlockEntity be = level.getBlockEntity(pos);
 			if (be!=null && be instanceof PropertyDelegateHolder) {
 				return ((PropertyDelegateHolder)be).getPropertyDelegate();
 			}
-			
-			return new ArrayPropertyDelegate(0);
-		}).orElse(new ArrayPropertyDelegate(0));
+
+			return new SimpleContainerData(0); // ArrayPropertyDelegate -> SimpleContainerData
+		}).orElse(new SimpleContainerData(0));
 	}
 
 	/**
 	 * Gets the property delegate at the context.
-	 *
-	 * <p>If no property delegate is found, returns an array property delegate
-	 * with the specified number of properties.
-	 *
-	 * <p>Searches for block entities implementing {@link PropertyDelegateHolder}.
-	 *
-	 * @param ctx  the context
-	 * @param size the number of properties
-	 * @return the found property delegate
-	 * @since 2.0.0
 	 */
-	public static PropertyDelegate getBlockPropertyDelegate(ScreenHandlerContext ctx, int size) {
-		return ctx.get((world, pos) -> {
-			BlockEntity be = world.getBlockEntity(pos);
+	public static ContainerData getBlockPropertyDelegate(ContainerLevelAccess ctx, int size) {
+		return ctx.evaluate((level, pos) -> {
+			BlockEntity be = level.getBlockEntity(pos);
 			if (be!=null && be instanceof PropertyDelegateHolder) {
 				return ((PropertyDelegateHolder)be).getPropertyDelegate();
 			}
 
-			return new ArrayPropertyDelegate(size);
-		}).orElse(new ArrayPropertyDelegate(size));
+			return new SimpleContainerData(size);
+		}).orElse(new SimpleContainerData(size));
 	}
-	
-	//extends ScreenHandler {
-		@Override
-		public boolean canUse(PlayerEntity entity) {
-			return (blockInventory!=null) ? blockInventory.canPlayerUse(entity) : true;
-		}
 
-		@Override
-		public void onClosed(PlayerEntity player) {
-			super.onClosed(player);
-			if (blockInventory != null) blockInventory.onClose(player);
-		}
-	//}
+	@Override
+	public boolean stillValid(Player entity) { // canUse -> stillValid
+		return (blockInventory!=null) ? blockInventory.stillValid(entity) : true; // canPlayerUse -> stillValid
+	}
+
+	@Override
+	public void removed(Player player) { // onClosed -> removed
+		super.removed(player);
+		if (blockInventory != null) blockInventory.stopOpen(player); // onClose -> stopOpen
+	}
 
 	@Override
 	public boolean isFocused(WWidget widget) {
@@ -486,9 +420,8 @@ public class SyncedGuiDescription extends ScreenHandler implements GuiDescriptio
 
 	@Override
 	public void requestFocus(WWidget widget) {
-		//TODO: Are there circumstances where focus can't be stolen?
-		if (focus==widget) return; //Nothing happens if we're already focused
-		if (!widget.canFocus()) return; //This is kind of a gotcha but needs to happen
+		if (focus==widget) return;
+		if (!widget.canFocus()) return;
 		if (focus!=null) focus.onFocusLost();
 		focus = widget;
 		focus.onFocusGained();
@@ -544,38 +477,31 @@ public class SyncedGuiDescription extends ScreenHandler implements GuiDescriptio
 
 	/**
 	 * Gets the network side this GUI description runs on.
-	 *
-	 * @return this GUI's network side
-	 * @since 3.3.0
 	 */
 	public final NetworkSide getNetworkSide() {
-		return world instanceof ServerWorld ? NetworkSide.SERVER : NetworkSide.CLIENT;
+		return world instanceof ServerLevel ? NetworkSide.SERVER : NetworkSide.CLIENT;
 	}
 
 	/**
 	 * Gets the packet sender corresponding to this GUI's network side.
-	 *
-	 * @return the packet sender
-	 * @since 3.3.0
 	 */
 	public final PacketSender getPacketSender() {
-		return new PacketSender((ServerPlayerEntity) playerInventory.player);
+		return new PacketSender((ServerPlayer) playerInventory.player);
 	}
 
 	public static class PacketSender {
-		private final ServerPlayerEntity serverPlayer;
+		private final ServerPlayer serverPlayer;
 
-		public PacketSender(ServerPlayerEntity serverPlayer) {
+		public PacketSender(ServerPlayer serverPlayer) {
 			this.serverPlayer = serverPlayer;
 		}
 
 		public void sendToPlayer(LibGuiPacket packet) {
-			ModNetwork.INSTANCE.send(PacketDistributor.PLAYER.with(() -> serverPlayer), packet);
+			ModNetwork.INSTANCE.send(packet, PacketDistributor.PLAYER.with(serverPlayer));
 		}
-
 		@OnlyIn(Dist.CLIENT)
 		public void sendToServer(LibGuiPacket packet) {
-			ModNetwork.INSTANCE.sendToServer(packet);
+			ModNetwork.INSTANCE.send(packet, PacketDistributor.SERVER.noArg());
 		}
 	}
 }

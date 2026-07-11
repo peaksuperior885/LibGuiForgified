@@ -1,22 +1,21 @@
 package io.github.cottonmc.cotton.gui;
 
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.player.PlayerInventory;
-import net.minecraft.inventory.StackReference;
-import net.minecraft.item.ItemStack;
-import net.minecraft.screen.ScreenHandlerType;
+import net.minecraft.world.entity.SlotAccess;
+import net.minecraft.world.entity.player.Player; // PlayerEntity -> Player
+import net.minecraft.world.entity.player.Inventory; // PlayerInventory -> Inventory
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.inventory.MenuType; // ScreenHandlerType -> MenuType
 
 import java.util.Objects;
 
 /**
  * A {@link SyncedGuiDescription} for an {@linkplain ItemStack item stack}
- * in an {@linkplain net.minecraft.inventory.Inventory inventory}.
+ * in an {@linkplain net.minecraft.world.Container container}.
  *
- * <p>The owning item is represented with a {@link StackReference}, which can be
+ * <p>The owning item is represented with a {@link SlotAccess}, which can be
  * an item in an entity's inventory or a block's container, or any other reference
  * to an item stack.
  *
- * <p>If the owning item stack changes in any way, the screen closes by default (see {@link #canUse(PlayerEntity)}).
  *
  * @since 7.0.0
  */
@@ -24,7 +23,7 @@ public class ItemSyncedGuiDescription extends SyncedGuiDescription {
 	/**
 	 * A reference to the owning item stack of this GUI.
 	 */
-	protected final StackReference owner;
+	protected final SlotAccess owner; // StackReference -> SlotAccess
 
 	/**
 	 * The initial item stack of this GUI. This stack must <strong>not</strong> be mutated!
@@ -39,7 +38,7 @@ public class ItemSyncedGuiDescription extends SyncedGuiDescription {
 	 * @param playerInventory the inventory of the player viewing this GUI description
 	 * @param owner           a reference to the owning item stack of this GUI description
 	 */
-	public ItemSyncedGuiDescription(ScreenHandlerType<?> type, int syncId, PlayerInventory playerInventory, StackReference owner) {
+	public ItemSyncedGuiDescription(MenuType<?> type, int syncId, Inventory playerInventory, SlotAccess owner) { // ScreenHandlerType -> MenuType, PlayerInventory -> Inventory, StackReference -> SlotAccess
 		super(type, syncId, playerInventory);
 		this.owner = Objects.requireNonNull(owner, "Owner cannot be null");
 		this.ownerStack = owner.get().copy();
@@ -49,15 +48,15 @@ public class ItemSyncedGuiDescription extends SyncedGuiDescription {
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation for {@code ItemSyncedGuiDescription} returns {@code true} if and only if
-	 * the {@linkplain #owner current owning item stack} is {@linkplain ItemStack#areEqual fully equal}
+	 * the {@linkplain #owner current owning item stack} is {@linkplain ItemStack#matches matching}
 	 * to the {@linkplain #ownerStack original owner}.
 	 *
-	 * <p>If the item NBT is intended to change, subclasses should override this method to only check
+	 * <p>If the item components are intended to change, subclasses should override this method to only check
 	 * the item and the count. Those subclasses should also take care to respond properly
-	 * to any NBT changes in the owning item stack.
+	 * to any component changes in the owning item stack.
 	 */
 	@Override
-	public boolean canUse(PlayerEntity entity) {
-		return ItemStack.areEqual(ownerStack, owner.get());
+	public boolean stillValid(Player entity) {
+		return ItemStack.matches(ownerStack, owner.get());
 	}
 }

@@ -1,14 +1,13 @@
 {
 	"required": true,
 	"minVersion": "0.8",
-	"compatibilityLevel": "JAVA_17",
+	"compatibilityLevel": "JAVA_21",
 	"package": "io.github.cottonmc.cotton.gui.impl.mixin",
+	"refmap": "libgui.refmap.json",
 	"plugin": "io.github.cottonmc.cotton.gui.impl.LibGuiMixinPlugin",
 	"client": [
-		"client.MinecraftClientMixin",
-		"client.ScreenAccessor"
+		"client.MinecraftClientMixin"
 	],
-
 	"injectors": {
 		"defaultRequire": 1
 	}

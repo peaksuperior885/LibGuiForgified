@@ -1,13 +1,13 @@
 package io.github.cottonmc.cotton.gui.widget;
 
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.font.TextRenderer;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.screen.narration.NarrationMessageBuilder;
-import net.minecraft.client.gui.screen.narration.NarrationPart;
-import net.minecraft.text.Style;
-import net.minecraft.text.Text;
+import net.minecraft.client.Minecraft; // MinecraftClient -> Minecraft
+import net.minecraft.client.gui.Font; // TextRenderer -> Font
+import net.minecraft.client.gui.GuiGraphics; // DrawContext -> GuiGraphics
+import net.minecraft.client.gui.screens.Screen; // Package change
+import net.minecraft.client.gui.narration.NarrationElementOutput; // NarrationMessageBuilder -> NarrationElementOutput
+import net.minecraft.client.gui.narration.NarratedElementType; // NarrationPart -> NarratedElementType
+import net.minecraft.network.chat.Style; // net.minecraft.text.Style -> net.minecraft.network.chat.Style
+import net.minecraft.network.chat.Component; // net.minecraft.text.Text -> net.minecraft.network.chat.Component
 
 import io.github.cottonmc.cotton.gui.client.ScreenDrawing;
 import io.github.cottonmc.cotton.gui.impl.client.LibGuiConfig;
@@ -22,7 +22,7 @@ import org.jetbrains.annotations.Nullable;
  * A single-line label widget.
  */
 public class WLabel extends WWidget {
-	protected Text text;
+	protected Component text; // Text -> Component
 	protected HorizontalAlignment horizontalAlignment = HorizontalAlignment.LEFT;
 	protected VerticalAlignment verticalAlignment = VerticalAlignment.TOP;
 	protected int color;
@@ -44,7 +44,7 @@ public class WLabel extends WWidget {
 	 * @param text the text of the label
 	 * @param color the color of the label
 	 */
-	public WLabel(Text text, int color) {
+	public WLabel(Component text, int color) { // Text -> Component
 		this.text = text;
 		this.color = color;
 		this.darkmodeColor = (color==DEFAULT_TEXT_COLOR) ? DEFAULT_DARKMODE_TEXT_COLOR : color;
@@ -56,22 +56,23 @@ public class WLabel extends WWidget {
 	 * @param text the text of the label
 	 * @since 1.8.0
 	 */
-	public WLabel(Text text) {
+	public WLabel(Component text) { // Text -> Component
 		this(text, DEFAULT_TEXT_COLOR);
 	}
 
 	@OnlyIn(Dist.CLIENT)
 	@Override
-	public void paint(DrawContext context, int x, int y, int mouseX, int mouseY) {
-		MinecraftClient mc = MinecraftClient.getInstance();
-		TextRenderer renderer = mc.textRenderer;
+	public void paint(GuiGraphics context, int x, int y, int mouseX, int mouseY) { // DrawContext -> GuiGraphics
+		Minecraft mc = Minecraft.getInstance(); // MinecraftClient -> Minecraft
+		Font renderer = mc.font; // TextRenderer -> Font, mc.textRenderer -> mc.font
 		int yOffset = switch (verticalAlignment) {
-			case CENTER -> height / 2 - renderer.fontHeight / 2;
-			case BOTTOM -> height - renderer.fontHeight;
+			case CENTER -> height / 2 - renderer.lineHeight / 2; // fontHeight -> lineHeight
+			case BOTTOM -> height - renderer.lineHeight;
 			case TOP -> 0;
 		};
 
-		ScreenDrawing.drawString(context, text.asOrderedText(), horizontalAlignment, x, y + yOffset, this.getWidth(), shouldRenderInDarkMode() ? darkmodeColor : color);
+		// Assuming ScreenDrawing is updated to handle GuiGraphics and FormattedCharSequence/Component
+		ScreenDrawing.drawString(context, text.getVisualOrderText(), horizontalAlignment, x, y + yOffset, this.getWidth(), shouldRenderInDarkMode() ? darkmodeColor : color); // asOrderedText() -> getVisualOrderText()
 
 		Style hoveredTextStyle = getTextStyleAt(mouseX, mouseY);
 		ScreenDrawing.drawTextHover(context, hoveredTextStyle, x + mouseX, y + mouseY);
@@ -82,9 +83,9 @@ public class WLabel extends WWidget {
 	public InputResult onClick(int x, int y, int button) {
 		Style hoveredTextStyle = getTextStyleAt(x, y);
 		if (hoveredTextStyle != null) {
-			Screen screen = MinecraftClient.getInstance().currentScreen;
+			Screen screen = Minecraft.getInstance().screen; // MinecraftClient.getInstance().currentScreen -> Minecraft.getInstance().screen
 			if (screen != null) {
-				return InputResult.of(screen.handleTextClick(hoveredTextStyle));
+				return InputResult.of(screen.handleComponentClicked(hoveredTextStyle)); // handleTextClick -> handleComponentClicked
 			}
 		}
 
@@ -102,7 +103,7 @@ public class WLabel extends WWidget {
 	@Nullable
 	public Style getTextStyleAt(int x, int y) {
 		if (isWithinBounds(x, y)) {
-			return MinecraftClient.getInstance().textRenderer.getTextHandler().getStyleAt(text, x);
+			return Minecraft.getInstance().font.getSplitter().componentStyleAtWidth(text, x); // textRenderer.getTextHandler().getStyleAt -> font.getSplitter().componentStyleAtWidth
 		}
 		return null;
 	}
@@ -111,7 +112,7 @@ public class WLabel extends WWidget {
 	public boolean canResize() {
 		return true;
 	}
-	
+
 	@Override
 	public void setSize(int x, int y) {
 		super.setSize(x, Math.max(8, y));
@@ -186,7 +187,7 @@ public class WLabel extends WWidget {
 	 *
 	 * @return the text
 	 */
-	public Text getText() {
+	public Component getText() { // Text -> Component
 		return text;
 	}
 
@@ -196,7 +197,7 @@ public class WLabel extends WWidget {
 	 * @param text the new text
 	 * @return this label
 	 */
-	public WLabel setText(Text text) {
+	public WLabel setText(Component text) { // Text -> Component
 		this.text = text;
 		return this;
 	}
@@ -245,7 +246,7 @@ public class WLabel extends WWidget {
 
 	@OnlyIn(Dist.CLIENT)
 	@Override
-	public void addNarrations(NarrationMessageBuilder builder) {
-		builder.put(NarrationPart.TITLE, text);
+	public void addNarrations(NarrationElementOutput builder) { // NarrationMessageBuilder -> NarrationElementOutput
+		builder.add(NarratedElementType.TITLE, text); // put(NarrationPart, ...) -> add(NarratedElementType, ...)
 	}
 }

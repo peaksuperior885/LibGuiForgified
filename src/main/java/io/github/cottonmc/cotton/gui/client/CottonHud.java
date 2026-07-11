@@ -1,13 +1,13 @@
 package io.github.cottonmc.cotton.gui.client;
 
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.util.Window;
+import com.mojang.blaze3d.platform.Window;
+import net.minecraft.client.Minecraft;
 
 import io.github.cottonmc.cotton.gui.widget.WWidget;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
-import org.thinkingstudio.libgui_foxified.events.api.ClientTickEvents;
-import org.thinkingstudio.libgui_foxified.events.api.HudRenderCallback;
+import com.peak885.libgui_forgified.events.api.ClientTickEvents;
+import com.peak885.libgui_forgified.events.api.HudRenderCallback;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -24,9 +24,9 @@ public final class CottonHud {
 
 	static {
 		HudRenderCallback.EVENT.register((drawContext, tickDelta) -> {
-			Window window = MinecraftClient.getInstance().getWindow();
-			int hudWidth = window.getScaledWidth();
-			int hudHeight = window.getScaledHeight();
+			Window window = Minecraft.getInstance().getWindow();
+			int hudWidth = window.getGuiScaledWidth();   // getScaledWidth() -> getGuiScaledWidth()
+			int hudHeight = window.getGuiScaledHeight(); // getScaledHeight() -> getGuiScaledHeight()
 			for (WWidget widget : widgets) {
 				Positioner positioner = positioners.get(widget);
 				if (positioner != null) {

@@ -1,16 +1,15 @@
 pluginManagement {
+	//includeBuild('C:/projects/jarjar')
     repositories {
-        maven {
-            name = 'Fabric'
-            url = 'https://maven.fabricmc.net/'
-        }
 		maven {
-			name "NeoForged"
-			url "https://maven.neoforged.net/releases"
+			name = "MinecraftForge"
+			url "https://files.minecraftforge.net/maven/"
 		}
+		maven {url "https://raw.githubusercontent.com/peaksuperior885/peaks_maven/main/files/" }
+		maven {url "https://maven.parchmentmc.org" }
 		maven { url "https://maven.architectury.dev/" }
-		maven { url "https://files.minecraftforge.net/maven/" }
 		maven { url "https://maven.firstdark.dev/releases" }
+
         gradlePluginPortal()
     }
 }

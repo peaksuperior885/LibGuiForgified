@@ -2,8 +2,8 @@ package io.github.cottonmc.cotton.gui;
 
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
-import org.thinkingstudio.libgui_foxified.base.util.TriState;
-import net.minecraft.screen.PropertyDelegate;
+import com.peak885.libgui_forgified.base.util.TriState;
+import net.minecraft.world.inventory.ContainerData; // net.minecraft.screen.PropertyDelegate -> net.minecraft.world.inventory.ContainerData
 
 import io.github.cottonmc.cotton.gui.widget.WPanel;
 import io.github.cottonmc.cotton.gui.widget.WWidget;
@@ -14,7 +14,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * A GUI description represents a GUI without depending on screens.
  *
- * <p>GUI descriptions contain the root panel and the property delegate of the GUI.
+ * <p>GUI descriptions contain the root panel and the container data of the GUI.
  * They also manage the focused widget.
  *
  * @see io.github.cottonmc.cotton.gui.client.LightweightGuiDescription
@@ -23,7 +23,7 @@ import org.jetbrains.annotations.Nullable;
 public interface GuiDescription {
 	public WPanel getRootPanel();
 	public int getTitleColor();
-	
+
 	public GuiDescription setRootPanel(WPanel panel);
 
 	/**
@@ -50,29 +50,29 @@ public interface GuiDescription {
 	GuiDescription setTitleColor(int lightColor, int darkColor);
 
 	/** Sets the object which manages the integer properties used by WBars */
-	public GuiDescription setPropertyDelegate(PropertyDelegate delegate);
-	
+	public GuiDescription setPropertyDelegate(ContainerData delegate);
+
 	/** Typical users won't call this. This adds a Slot to Container/Controller-based guis, and does nothing on lightweight guis. */
 	public void addSlotPeer(ValidatedSlot slot);
-	
+
 	/** Guis should use this method to add clientside styles and BackgroundPainters to their controls */
 	@OnlyIn(Dist.CLIENT)
 	public void addPainters();
-	
+
 	/** Gets the object which manages the integer properties used by WBars and such. */
 	@Nullable
-	public PropertyDelegate getPropertyDelegate();
-	
+	public ContainerData getPropertyDelegate();
+
 	/** Tests whether the widget is the currently-focused one. */
 	public boolean isFocused(WWidget widget);
-	
+
 	/** Gets the currently-focused WWidget. May be null. */
 	@Nullable
 	public WWidget getFocus();
-	
+
 	/** Notifies this gui that the widget wants to acquire focus. */
 	public void requestFocus(WWidget widget);
-	
+
 	/** Notifies this gui that the widget wants to give up its hold over focus. */
 	public void releaseFocus(WWidget widget);
 
@@ -147,14 +147,6 @@ public interface GuiDescription {
 
 	/**
 	 * Checks whether dark mode is used for this GUI description.
-	 *
-	 * @return <ul>
-	 *     <li>{@link TriState#TRUE} to force dark mode
-	 *     <li>{@link TriState#FALSE} to force light mode
-	 *     <li>{@link TriState#DEFAULT} to use the {@linkplain io.github.cottonmc.cotton.gui.client.LibGui#isDarkMode()
-	 *     global dark mode setting}
-	 * </ul>
-	 * @since 7.1.0
 	 */
 	default TriState isDarkMode() {
 		return TriState.DEFAULT;
