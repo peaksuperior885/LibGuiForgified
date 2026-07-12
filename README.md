@@ -13,7 +13,7 @@ and opacity can be customized, and everything can be extended.
 
 This is how to get LibGuiFoxified into your development environment:
 
-1. Add the CloudSmith repository:
+1. Add the Github repository:
 ```groovy
 repositories {
     maven { url "https://raw.githubusercontent.com/peaksuperior885/peaks_maven/main/files/" }
