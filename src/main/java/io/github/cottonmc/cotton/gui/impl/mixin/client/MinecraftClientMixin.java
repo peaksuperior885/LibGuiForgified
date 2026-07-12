@@ -11,12 +11,9 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-// Prevents LibGui screens from being opened in a dev environment
-// using Item.use/useOnBlock/useOnEntity.
 @Mixin(Minecraft.class)
 abstract class MinecraftClientMixin {
 	@Inject(method = "setScreen", at = @At(value = "HEAD"), remap = false)
 	private void onSetScreen(Screen screen, CallbackInfo info) {
-//		ItemUseChecker.checkSetScreen(screen);
 	}
 }

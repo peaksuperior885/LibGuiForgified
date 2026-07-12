@@ -6,6 +6,7 @@
 	"refmap": "libgui.refmap.json",
 	"plugin": "io.github.cottonmc.cotton.gui.impl.LibGuiMixinPlugin",
 	"client": [
+		"client.ContainerEventHandlerMixin",
 		"client.MinecraftClientMixin"
 	],
 	"injectors": {
