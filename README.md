@@ -25,7 +25,7 @@ repositories {
 2. Add the dependency, replacing <version> with your desired LibGuiFoxified version:
 ```groovy
 dependencies {
-     implementation 'com.peak885:LibGuiForgified:0.1.2+1.21.1'
+     implementation 'com.peak885:LibGuiForgified:0.1.3+1.21.1'
 }
 ```
 The include makes Loom bundle LibGuiFoxified within your mod jar.
