@@ -76,7 +76,10 @@ public class WTextField extends WWidget {
 	}
 
 	@Override
-	public void setSize(int x, int y) { super.setSize(x, 20); }
+	public void setSize(int x, int y) {
+		this.width = x;
+		this.height = y;
+	}
 
 	public void setCursorPos(int location) {
 		this.cursor = Mth.clamp(location, 0, text.length());
@@ -108,22 +111,21 @@ public class WTextField extends WWidget {
 		checkScrollOffset();
 		String visibleText = font.plainSubstrByWidth(this.text.substring(this.scrollOffset), this.width - 2 * TEXT_PADDING_X);
 
-		// Render Background
-		int borderColor = this.isFocused() ? BORDER_COLOR_SELECTED : BORDER_COLOR_UNSELECTED;
-		ScreenDrawing.coloredRect(graphics, x - 1, y - 1, width + 2, height + 2, borderColor);
+		ScreenDrawing.coloredRect(graphics, x - 1, y - 1, width + 2, height + 2, BORDER_COLOR_UNSELECTED);
 		ScreenDrawing.coloredRect(graphics, x, y, width, height, BACKGROUND_COLOR);
 
-		// Render Text
 		int textColor = this.editable ? this.enabledColor : this.disabledColor;
 		graphics.drawString(font, visibleText, x + TEXT_PADDING_X, y + TEXT_PADDING_Y, textColor, false);
 
-		// Render Cursor
 		if (this.isFocused() && (this.tickCount / 6 % 2 == 0)) {
 			int cursorOffset = font.width(visibleText.substring(0, Math.min(this.cursor - this.scrollOffset, visibleText.length())));
 			ScreenDrawing.coloredRect(graphics, x + TEXT_PADDING_X + cursorOffset, y + CURSOR_PADDING_Y, 1, CURSOR_HEIGHT, CURSOR_COLOR);
 		}
-	}
 
+		if (this.isFocused()) {
+			ScreenDrawing.coloredRect(graphics, x - 1, y - 1, width + 2, height + 2, BORDER_COLOR_SELECTED);
+		}
+	}
 	public boolean isEditable() {
 		return this.editable;
 	}
