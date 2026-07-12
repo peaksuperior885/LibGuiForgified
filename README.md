@@ -28,7 +28,16 @@ dependencies {
      implementation 'com.peak885:LibGuiForgified:0.1.3+1.21.1'
 }
 ```
-The include makes Loom bundle LibGuiForgified within your mod jar.
+The include makes Architectury Loom bundle LibGuiForgified within your mod jar.
+
+And if you're a forgegradle user i recommend using this plugin
+
+```groovy
+plugins {
+	id 'net.minecraftforge.gradle' version '[6.0.24,6.2)'
+	id 'com.peak885.jarjar-alternative' version '1.2-BETA'
+}
+```
 
 ## Docs
 See the [LibGui wiki](https://github.com/CottonMC/LibGui/wiki)
