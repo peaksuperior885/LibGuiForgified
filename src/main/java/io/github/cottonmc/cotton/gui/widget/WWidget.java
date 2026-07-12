@@ -17,9 +17,9 @@ import org.lwjgl.glfw.GLFW;
 
 /**
  * The base class for all widgets.
- *
  */
 public class WWidget {
+
 	private static final VisualLogger LOGGER = new VisualLogger(WWidget.class);
 
 	/**
@@ -69,44 +69,24 @@ public class WWidget {
 		this.height = y;
 	}
 
-	/**
-	 * Gets the X coordinate of this widget relative to its parent.
-	 *
-	 * @return the X coordinate
-	 */
 	public int getX() {
 		return x;
 	}
 
-	/**
-	 * Gets the Y coordinate of this widget relative to its parent.
-	 *
-	 * @return the Y coordinate
-	 */
 	public int getY() {
 		return y;
 	}
 
-	/**
-	 * Gets the absolute X coordinate of this widget.
-	 *
-	 * @return the absolute X coordinate
-	 */
 	public int getAbsoluteX() {
-		if (parent==null) {
+		if (parent == null) {
 			return getX();
 		} else {
 			return getX() + parent.getAbsoluteX();
 		}
 	}
 
-	/**
-	 * Gets the absolute Y coordinate of this widget.
-	 *
-	 * @return the absolute Y coordinate
-	 */
 	public int getAbsoluteY() {
-		if (parent==null) {
+		if (parent == null) {
 			return getY();
 		} else {
 			return getY() + parent.getAbsoluteY();
@@ -121,30 +101,15 @@ public class WWidget {
 		return height;
 	}
 
-	/**
-	 * Checks whether this widget can be resized using {@link #setSize}.
-	 *
-	 * @return true if this widget can be resized, false otherwise
-	 */
 	public boolean canResize() {
 		return false;
 	}
 
-	/**
-	 * Gets the parent panel of this widget.
-	 *
-	 * @return the parent, or null if this widget has no parent
-	 */
 	@Nullable
 	public WPanel getParent() {
 		return parent;
 	}
 
-	/**
-	 * Sets the parent panel of this widget.
-	 *
-	 * @param parent the new parent
-	 */
 	public void setParent(WPanel parent) {
 		this.parent = parent;
 	}
@@ -201,12 +166,12 @@ public class WWidget {
 	}
 
 	public boolean isFocused() {
-		if (host==null) return false;
+		if (host == null) return false;
 		return host.isFocused(this);
 	}
 
 	public void requestFocus() {
-		if (host!=null) {
+		if (host != null) {
 			host.requestFocus(this);
 		} else {
 			LOGGER.warn("Requesting focus for {}, but the host is null", this);
@@ -214,7 +179,7 @@ public class WWidget {
 	}
 
 	public void releaseFocus() {
-		if (host!=null) host.releaseFocus(this);
+		if (host != null) host.releaseFocus(this);
 	}
 
 	public boolean canFocus() {
@@ -229,7 +194,7 @@ public class WWidget {
 	}
 
 	public boolean isWithinBounds(int x, int y) {
-		return x>=0 && y>=0 && x<this.width && y<this.height;
+		return x >= 0 && y >= 0 && x < this.width && y < this.height;
 	}
 
 	/**
@@ -243,7 +208,6 @@ public class WWidget {
 		if (builder.size() == 0) return;
 
 		var client = Minecraft.getInstance();
-		// In 1.21.1 GuiGraphics, drawTooltip has multiple variants; this uses the straightforward string list processor
 		context.renderTooltip(client.font, builder.lines, tX + x, tY + y);
 	}
 

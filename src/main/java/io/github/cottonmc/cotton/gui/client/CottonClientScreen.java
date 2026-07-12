@@ -6,6 +6,8 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.events.GuiEventListener; // Element -> GuiEventListener
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.narration.NarrationElementOutput; // NarrationMessageBuilder -> NarrationElementOutput
+import net.minecraft.client.renderer.CubeMap;
+import net.minecraft.client.renderer.PanoramaRenderer;
 import net.minecraft.network.chat.CommonComponents; // ScreenTexts -> CommonComponents
 import net.minecraft.network.chat.Component;
 
@@ -18,6 +20,9 @@ import io.github.cottonmc.cotton.gui.impl.client.NarrationHelper;
 import io.github.cottonmc.cotton.gui.widget.WPanel;
 import io.github.cottonmc.cotton.gui.widget.WWidget;
 import io.github.cottonmc.cotton.gui.widget.data.InputResult;
+
+import net.minecraft.resources.ResourceLocation;
+
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.opengl.GL11;
 
@@ -26,6 +31,10 @@ public class CottonClientScreen extends Screen implements CottonScreenImpl {
 	protected GuiDescription description;
 	protected int left = 0;
 	protected int top = 0;
+
+	private static final CubeMap PANORAMA_CUBE_MAP =
+		new CubeMap(ResourceLocation.withDefaultNamespace("textures/gui/title/background/panorama"));
+	private final PanoramaRenderer panorama = new PanoramaRenderer(PANORAMA_CUBE_MAP);
 
 	/**
 	 * The X coordinate of the screen title.
@@ -149,21 +158,27 @@ public class CottonClientScreen extends Screen implements CottonScreenImpl {
 
 	@Override
 	public void render(GuiGraphics context, int mouseX, int mouseY, float partialTicks) {
+		if (this.minecraft.level != null) {
+			this.renderBlurredBackground(partialTicks);
+		} else {
+			this.panorama.render(context, this.width, this.height, 1.0F, partialTicks);
+			this.renderBlurredBackground(partialTicks);
+		}
+
 		paint(context, mouseX, mouseY, partialTicks);
 
 		super.render(context, mouseX, mouseY, partialTicks);
 
-		if (description!=null) {
+		if (description != null) {
 			WPanel root = description.getRootPanel();
-			if (root!=null) {
-				WWidget hitChild = root.hit(mouseX-left, mouseY-top);
-				if (hitChild!=null) hitChild.renderTooltip(context, left, top, mouseX-left, mouseY-top);
+			if (root != null) {
+				WWidget hitChild = root.hit(mouseX - left, mouseY - top);
+				if (hitChild != null) hitChild.renderTooltip(context, left, top, mouseX - left, mouseY - top);
 			}
 		}
 
 		VisualLogger.render(context);
 	}
-
 	@Override
 	public void tick() {
 		super.tick();
