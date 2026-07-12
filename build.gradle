@@ -58,6 +58,10 @@ repositories {
 		url "https://server.bbkr.space/artifactory/libs-release"
 		content { includeGroup "io.github.cottonmc" }
 	}
+	maven {
+		name "taumcReleases"
+		url "https://maven.taumc.org/releases"
+	}
 }
 
 mixin {
@@ -143,8 +147,14 @@ tasks.withType(JavaCompile).configureEach {
 
 publishing {
 	publications {
-		mavenJava(MavenPublication) {
+		plugin(MavenPublication) {
 			from components.java
+		}
+	}
+	repositories {
+		maven {
+			name = "GitHub"
+			url = layout.projectDirectory.dir("peaks_maven")
 		}
 	}
 }
