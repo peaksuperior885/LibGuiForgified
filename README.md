@@ -1,10 +1,8 @@
 <img src="doc/icon.png" align="right" width="180px"/>
 
-# LibGuiFoxified
+# LibGuiForgified
 
-[![Hosted By: Cloudsmith](https://img.shields.io/badge/OSS%20hosting%20by-cloudsmith-blue?logo=cloudsmith&style=flat-square)](https://cloudsmith.com)
-
-LibGui unofficial (Neo)Forge port.
+LibGui unofficial Forge port.
 
 Minecraft GUIs without spending forever painstakingly aligning things to the background image.
 Instead, LibGui takes a logical description of your GUI, and draws it on-the-fly like any modern
@@ -18,10 +16,7 @@ This is how to get LibGuiFoxified into your development environment:
 1. Add the CloudSmith repository:
 ```groovy
 repositories {
-    maven {
-        name = "CloudSmith"
-        url = "https://dl.cloudsmith.io/public/thinkingstudio/libguifoxified/maven/"
-    }
+    maven { url "https://raw.githubusercontent.com/peaksuperior885/peaks_maven/main/files/" }
 }
 ```
 > Note: This is not the same repositories as the one in publishing! 
@@ -30,7 +25,7 @@ repositories {
 2. Add the dependency, replacing <version> with your desired LibGuiFoxified version:
 ```groovy
 dependencies {
-	modImplementation include("org.thinkingstudio:LibGuiFoxified:<version>")
+     implementation 'com.peak885:LibGuiForgified:0.1.2+1.21.1'
 }
 ```
 The include makes Loom bundle LibGuiFoxified within your mod jar.
