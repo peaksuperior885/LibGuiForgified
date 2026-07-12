@@ -11,7 +11,7 @@ and opacity can be customized, and everything can be extended.
 
 ## Dev Setup
 
-This is how to get LibGuiFoxified into your development environment:
+This is how to get LibGuiForgified into your development environment:
 
 1. Add the Github repository:
 ```groovy
@@ -22,13 +22,13 @@ repositories {
 > Note: This is not the same repositories as the one in publishing! 
 > You have to add the repository to a top-level repositories block.
 
-2. Add the dependency, replacing <version> with your desired LibGuiFoxified version:
+2. Add the dependency, replacing 0.1.3 with your desired LibGuiForgified version:
 ```groovy
 dependencies {
      implementation 'com.peak885:LibGuiForgified:0.1.3+1.21.1'
 }
 ```
-The include makes Loom bundle LibGuiFoxified within your mod jar.
+The include makes Loom bundle LibGuiForgified within your mod jar.
 
 ## Docs
 See the [LibGui wiki](https://github.com/CottonMC/LibGui/wiki)
